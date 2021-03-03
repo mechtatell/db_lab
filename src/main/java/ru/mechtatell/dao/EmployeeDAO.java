@@ -19,6 +19,9 @@ public class EmployeeDAO implements DAO<Employee> {
     @Autowired
     private DAO<Position> positionDAO;
 
+    @Autowired
+    private TeamDAO teamDAO;
+
     public List<Employee> index() {
         List<Employee> employees = new ArrayList<>();
 
@@ -33,6 +36,7 @@ public class EmployeeDAO implements DAO<Employee> {
                 employee.setFirstName(resultSet.getString("first_name"));
                 employee.setLastName(resultSet.getString("last_name"));
                 employee.setPosition(positionDAO.show(resultSet.getInt("position_id")));
+                employee.setTeamList(teamDAO.indexOnEmployee(employee.getId()));
                 employees.add(employee);
             }
 
@@ -104,5 +108,30 @@ public class EmployeeDAO implements DAO<Employee> {
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
+    }
+
+    public List<Employee> indexOnTeam(int teamID) {
+        List<Employee> employees = new ArrayList<>();
+
+        try {
+            PreparedStatement statement = connection.getConnection().prepareStatement("SELECT e.* FROM employee e JOIN employee_team et on e.id = et.employee_id WHERE et.team_id = ?");
+            statement.setInt(1, teamID);
+            ResultSet resultSet = statement.executeQuery();
+
+            while (resultSet.next()) {
+                Employee employee = new Employee();
+                employee.setId(resultSet.getInt("id"));
+                employee.setFirstName(resultSet.getString("first_name"));
+                employee.setLastName(resultSet.getString("last_name"));
+                employee.setPosition(positionDAO.show(resultSet.getInt("position_id")));
+                employee.setTeamList(teamDAO.indexOnEmployee(employee.getId()));
+                employees.add(employee);
+            }
+
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+
+        return employees;
     }
 }

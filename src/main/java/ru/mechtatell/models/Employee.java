@@ -11,9 +11,10 @@ public class Employee {
 
     public Employee() {};
 
-    public Employee(String firstName, String lastName, Position position) {
+    public Employee(String firstName, String lastName, List<Team> teamList, Position position) {
         this.firstName = firstName;
         this.lastName = lastName;
+        this.teamList = teamList;
         this.position = position;
     }
 

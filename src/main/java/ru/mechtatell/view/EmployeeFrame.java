@@ -131,7 +131,7 @@ public class EmployeeFrame {
                 String lastName = lastNameField.getText();
                 int positionId = (int) comboBoxPosition.getSelectedItem();
 
-                Employee employee = new Employee(firstName, lastName, positionDAO.show(positionId));
+                Employee employee = new Employee(firstName, lastName, null, positionDAO.show(positionId));
                 employeeDAO.save(employee);
                 refreshTable();
             }
@@ -173,7 +173,7 @@ public class EmployeeFrame {
 
         Employee employee = employeeDAO.show(id);
 
-        JPanel employeePanel = getNewEmployeePanel(employee.getFirstName(), employee.getLastName(), 1);
+        JPanel employeePanel = getNewEmployeePanel(employee.getFirstName(), employee.getLastName(), employee.getPosition().getId());
         int result = JOptionPane.showConfirmDialog(frame, employeePanel, "Изменение сотрудника",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
@@ -198,7 +198,7 @@ public class EmployeeFrame {
                 String lastName = lastNameField.getText();
                 int positionId = (int) comboBoxPosition.getSelectedItem();
 
-                Employee updatedEmployee = new Employee(firstName, lastName, positionDAO.show(positionId));
+                Employee updatedEmployee = new Employee(firstName, lastName, null, positionDAO.show(positionId));
                 employeeDAO.update(id, updatedEmployee);
                 refreshTable();
 

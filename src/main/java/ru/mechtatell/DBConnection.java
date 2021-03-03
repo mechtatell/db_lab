@@ -13,7 +13,7 @@ public class DBConnection {
     public DBConnection() {
         try {
             connection = DriverManager.getConnection(
-                    "jdbc:postgresql://192.168.1.69:5432/db_lab",
+                    "jdbc:postgresql://192.168.43.118:5432/db_lab",
                     "mechtatell",
                     "123qwe");
         } catch (SQLException throwables) {
