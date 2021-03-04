@@ -7,7 +7,6 @@ import ru.mechtatell.models.Position;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
-import javax.tools.FileObject;
 import java.awt.*;
 
 @Component

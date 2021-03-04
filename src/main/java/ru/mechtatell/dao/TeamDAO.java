@@ -34,11 +34,6 @@ public class TeamDAO {
                 .stream().findAny().orElse(null);
     }
 
-    public List<Team> indexOnEmployee(int employeeID) {
-        return jdbcTemplate.query("SELECT t.* FROM team t JOIN employee_team et ON t.id = et.team_id WHERE et.employee_id = ?",
-                context.getBean(TeamMapper.class), employeeID);
-    }
-
     public List<Team> indexOnProject(int projectID) {
         return jdbcTemplate.query("SELECT t.* FROM team t JOIN team_project tp ON t.id = tp.team_id WHERE tp.project_id = ?",
                 context.getBean(TeamMapper.class), projectID);
