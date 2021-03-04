@@ -1,8 +1,8 @@
-package ru.mechtatell.view;
+package ru.mechtatell.views;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import ru.mechtatell.dao.DAO;
+import ru.mechtatell.dao.PositionDAO;
 import ru.mechtatell.models.Position;
 
 import javax.swing.*;
@@ -15,8 +15,13 @@ public class PositionFrame {
     private JTable table;
     private JScrollPane scrollPane;
 
+
+    private final PositionDAO positionDAO;
+
     @Autowired
-    private DAO<Position> dao;
+    public PositionFrame(PositionDAO positionDAO) {
+        this.positionDAO = positionDAO;
+    }
 
     public void init() {
         frame = new JFrame("Должности");
@@ -46,7 +51,7 @@ public class PositionFrame {
     }
 
     private void refreshTable() {
-        java.util.List<Position> positionList = dao.index();
+        java.util.List<Position> positionList = positionDAO.index();
         Object[][] data = new String[positionList.size()][3];
 
         for (int i = 0; i < data.length; i++) {
@@ -66,7 +71,7 @@ public class PositionFrame {
         }
         scrollPane = new JScrollPane(table);
         frame.add(scrollPane);
-        scrollPane.setBounds(5, 5, 500, 490);
+        scrollPane.setBounds(5, 5, 500, 450);
         frame.repaint();
     }
 
@@ -110,7 +115,7 @@ public class PositionFrame {
                 double payment = Double.parseDouble(paymentField.getText());
 
                 Position position = new Position(name, payment);
-                dao.save(position);
+                positionDAO.save(position);
                 refreshTable();
             }
         } catch (Exception ex) {
@@ -134,7 +139,7 @@ public class PositionFrame {
             int resultError = JOptionPane.showConfirmDialog(frame, "Вы действительно хотите удалить запись?",
                     "Подтверждение", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
             if (resultError == JOptionPane.OK_OPTION) {
-                dao.remove(id);
+                positionDAO.remove(id);
                 refreshTable();
                 table.clearSelection();
             }
@@ -149,7 +154,7 @@ public class PositionFrame {
 
         int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(table.getSelectedRow(), 0)));
 
-        Position position = dao.show(id);
+        Position position = positionDAO.show(id);
 
         JPanel positionPanel = getPositionPanel(position.getName(), String.valueOf(position.getPayment()));
         int result = JOptionPane.showConfirmDialog(frame, positionPanel, "Создание должности",
@@ -171,7 +176,7 @@ public class PositionFrame {
                 double payment = Double.parseDouble(paymentField.getText());
 
                 Position updatedPosition = new Position(name, payment);
-                dao.update(id, updatedPosition);
+                positionDAO.update(id, updatedPosition);
                 refreshTable();
             }
         } catch (Exception ex) {

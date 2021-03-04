@@ -1,20 +1,19 @@
 package ru.mechtatell.models;
 
 import java.util.List;
+import java.util.Objects;
 
 public class Employee {
     private int id;
     private String firstName;
     private String lastName;
-    private List<Team> teamList;
     private Position position;
 
     public Employee() {};
 
-    public Employee(String firstName, String lastName, List<Team> teamList, Position position) {
+    public Employee(String firstName, String lastName, Position position) {
         this.firstName = firstName;
         this.lastName = lastName;
-        this.teamList = teamList;
         this.position = position;
     }
 
@@ -42,19 +41,26 @@ public class Employee {
         this.lastName = lastName;
     }
 
-    public List<Team> getTeamList() {
-        return teamList;
-    }
-
-    public void setTeamList(List<Team> teamList) {
-        this.teamList = teamList;
-    }
-
     public Position getPosition() {
         return position;
     }
 
     public void setPosition(Position position) {
         this.position = position;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Employee employee = (Employee) o;
+        return id == employee.id &&
+                firstName.equals(employee.firstName) &&
+                lastName.equals(employee.lastName);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, firstName, lastName);
     }
 }

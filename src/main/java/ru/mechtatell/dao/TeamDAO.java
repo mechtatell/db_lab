@@ -1,145 +1,73 @@
 package ru.mechtatell.dao;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Component;
-import ru.mechtatell.DBConnection;
+import ru.mechtatell.dao.mappers.TeamMapper;
 import ru.mechtatell.models.Employee;
 import ru.mechtatell.models.Team;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
+import java.sql.*;
 import java.util.List;
+import java.util.Objects;
 
 @Component
-public class TeamDAO implements DAO<Team> {
+public class TeamDAO {
+
+    private final ApplicationContext context;
+    private final JdbcTemplate jdbcTemplate;
 
     @Autowired
-    private DBConnection connection;
-
-    @Autowired
-    private EmployeeDAO employeeDAO;
-
-    public List<Team> index() {
-        List<Team> teams = new ArrayList<>();
-
-        try {
-            Statement statement = connection.getConnection().createStatement();
-            String SQL = "SELECT * FROM team";
-            ResultSet resultSet = statement.executeQuery(SQL);
-
-            while (resultSet.next()) {
-                Team team = new Team();
-                team.setId(resultSet.getInt("id"));
-                team.setName(resultSet.getString("first_name"));
-                team.setEmployeeList(employeeDAO.indexOnTeam(team.getId()));
-                //
-                teams.add(team);
-            }
-
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        }
-
-        return teams;
+    public TeamDAO(ApplicationContext context, JdbcTemplate jdbcTemplate) {
+        this.context = context;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
-    public void save(Team team) {
-        try {
-            PreparedStatement statement =
-                    connection.getConnection().prepareStatement("INSERT INTO team (name) VALUES (?)");
-
-            statement.setString(1, team.getName());
-            statement.executeUpdate();
-
-            for (Employee employee : team.getEmployeeList()) {
-                statement = connection.getConnection().prepareStatement("INSERT INTO employee_team VALUES (?, ?)");
-                statement.setInt(1, employee.getId());
-                statement.setInt(2, team.getId());
-                statement.executeUpdate();
-            }
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        }
+    public List<Team> index() {
+        return jdbcTemplate.query("SELECT * FROM team", context.getBean(TeamMapper.class));
     }
 
     public Team show(int id) {
-        Team team = null;
-        try {
-            PreparedStatement statement =
-                    connection.getConnection().prepareStatement("SELECT * FROM team WHERE id = ?");
-            statement.setInt(1, id);
-            ResultSet resultSet = statement.executeQuery();
-            resultSet.next();
+        return jdbcTemplate.query("SELECT * FROM team WHERE id = ?", context.getBean(TeamMapper.class), id)
+                .stream().findAny().orElse(null);
+    }
 
-            team = new Team();
-            team.setId(resultSet.getInt("id"));
-            team.setName(resultSet.getString("name"));
-            team.setEmployeeList(employeeDAO.indexOnTeam(id));
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+    public List<Team> indexOnEmployee(int employeeID) {
+        return jdbcTemplate.query("SELECT t.* FROM team t JOIN employee_team et ON t.id = et.team_id WHERE et.employee_id = ?",
+                context.getBean(TeamMapper.class), employeeID);
+    }
+
+    public List<Team> indexOnProject(int projectID) {
+        return jdbcTemplate.query("SELECT t.* FROM team t JOIN team_project tp ON t.id = tp.team_id WHERE tp.project_id = ?",
+                context.getBean(TeamMapper.class), projectID);
+    }
+
+    public void save(Team team) {
+        GeneratedKeyHolder holder = new GeneratedKeyHolder();
+        jdbcTemplate.update(con -> {
+            PreparedStatement statement = con.prepareStatement("INSERT INTO team (name) VALUES (?)", Statement.RETURN_GENERATED_KEYS);
+            statement.setString(1, team.getName());
+            return statement; }, holder);
+
+        int id = (int) Objects.requireNonNull(holder.getKeys()).get("id");
+        jdbcTemplate.update("DELETE FROM employee_team WHERE team_id = ?", id);
+        for (Employee employee : team.getEmployeeList()) {
+            jdbcTemplate.update("INSERT INTO employee_team VALUES (?, ?)", employee.getId(), id);
         }
-
-        return team;
     }
 
     public void update(int id, Team updatedTeam) {
-        try {
-            PreparedStatement statement =
-                    connection.getConnection().prepareStatement("UPDATE team SET name=? WHERE id=?");
-            statement.setString(1, updatedTeam.getName());
-            statement.setInt(2, id);
-            statement.executeUpdate();
-
-            statement = connection.getConnection().prepareStatement("DELETE FROM employee_team WHERE team_id = ?");
-            statement.setInt(1, id);
-            statement.executeUpdate();
-
-            for (Employee employee : updatedTeam.getEmployeeList()) {
-                statement = connection.getConnection().prepareStatement("INSERT INTO employee_team VALUES (?, ?)");
-                statement.setInt(1, employee.getId());
-                statement.setInt(2, id);
-                statement.executeUpdate();
-            }
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+        jdbcTemplate.update("UPDATE team SET name=? WHERE id=?",
+                updatedTeam.getName(), id);
+        jdbcTemplate.update("DELETE FROM employee_team WHERE team_id = ?", id);
+        for (Employee employee : updatedTeam.getEmployeeList()) {
+            jdbcTemplate.update("INSERT INTO employee_team VALUES (?, ?)", employee.getId(), id);
         }
     }
 
     public void remove(int id) {
-        try {
-            PreparedStatement statement =
-                    connection.getConnection().prepareStatement("DELETE FROM team WHERE id=?");
-            statement.setInt(1, id);
-
-            statement.executeUpdate();
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        }
-    }
-
-    public List<Team> indexOnEmployee(int employeeId) {
-        List<Team> teams = new ArrayList<>();
-
-        try {
-            PreparedStatement statement = connection.getConnection().prepareStatement("SELECT t.* FROM team t JOIN employee_team et on t.id = et.team_id WHERE et.employee_id = ?");
-            statement.setInt(1, employeeId);
-            ResultSet resultSet = statement.executeQuery();
-
-            while (resultSet.next()) {
-                Team team = new Team();
-                team.setId(resultSet.getInt("id"));
-                team.setName(resultSet.getString("name"));
-                team.setEmployeeList(employeeDAO.indexOnTeam(team.getId()));
-                teams.add(team);
-            }
-
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        }
-
-        return teams;
+        jdbcTemplate.update("DELETE FROM team WHERE id=?", id);
     }
 }

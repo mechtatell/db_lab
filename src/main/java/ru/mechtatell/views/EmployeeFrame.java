@@ -1,16 +1,17 @@
-package ru.mechtatell.view;
+package ru.mechtatell.views;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import ru.mechtatell.dao.DAO;
+import ru.mechtatell.dao.EmployeeDAO;
+import ru.mechtatell.dao.PositionDAO;
 import ru.mechtatell.models.Employee;
 import ru.mechtatell.models.Position;
+import ru.mechtatell.views.components.ComboBoxPosition;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.util.List;
-import java.util.Vector;
 
 @Component
 public class EmployeeFrame {
@@ -18,11 +19,14 @@ public class EmployeeFrame {
     private JTable table;
     private JScrollPane scrollPane;
 
-    @Autowired
-    private DAO<Employee> employeeDAO;
+    private final EmployeeDAO employeeDAO;
+    private final PositionDAO positionDAO;
 
     @Autowired
-    private DAO<Position> positionDAO;
+    public EmployeeFrame(EmployeeDAO employeeDAO, PositionDAO positionDAO) {
+        this.employeeDAO = employeeDAO;
+        this.positionDAO = positionDAO;
+    }
 
     public void init() {
         frame = new JFrame("Работники");
@@ -73,7 +77,7 @@ public class EmployeeFrame {
         }
         scrollPane = new JScrollPane(table);
         frame.add(scrollPane);
-        scrollPane.setBounds(5, 5, 500, 490);
+        scrollPane.setBounds(5, 5, 500, 450);
         frame.repaint();
     }
 
@@ -87,7 +91,7 @@ public class EmployeeFrame {
         JTextField textFieldLastName = new JTextField(lastName, 10);
 
         Position[] positions = positionDAO.index().toArray(new Position[0]);
-        MyComboBox comboBoxPositionModel = new MyComboBox(positions);
+        ComboBoxPosition comboBoxPositionModel = new ComboBoxPosition(positions);
         JComboBox<Position> comboBoxPosition = new JComboBox<>(comboBoxPositionModel);
         comboBoxPosition.setSelectedItem(positionId);
 
@@ -131,7 +135,7 @@ public class EmployeeFrame {
                 String lastName = lastNameField.getText();
                 int positionId = (int) comboBoxPosition.getSelectedItem();
 
-                Employee employee = new Employee(firstName, lastName, null, positionDAO.show(positionId));
+                Employee employee = new Employee(firstName, lastName, positionDAO.show(positionId));
                 employeeDAO.save(employee);
                 refreshTable();
             }
@@ -198,7 +202,7 @@ public class EmployeeFrame {
                 String lastName = lastNameField.getText();
                 int positionId = (int) comboBoxPosition.getSelectedItem();
 
-                Employee updatedEmployee = new Employee(firstName, lastName, null, positionDAO.show(positionId));
+                Employee updatedEmployee = new Employee(firstName, lastName, positionDAO.show(positionId));
                 employeeDAO.update(id, updatedEmployee);
                 refreshTable();
 

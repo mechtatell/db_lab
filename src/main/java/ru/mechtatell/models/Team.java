@@ -1,18 +1,16 @@
 package ru.mechtatell.models;
 
 import java.util.List;
+import java.util.Objects;
 
 public class Team {
     private int id;
     private String name;
     private List<Employee> employeeList;
-    private List<Project> projectList;
 
-    public Team(int id, String name, List<Employee> employeeList, List<Project> projectList) {
-        this.id = id;
+    public Team(String name, List<Employee> employeeList) {
         this.name = name;
         this.employeeList = employeeList;
-        this.projectList = projectList;
     }
 
     public Team() {
@@ -42,11 +40,17 @@ public class Team {
         this.employeeList = employeeList;
     }
 
-    public List<Project> getProjectList() {
-        return projectList;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Team team = (Team) o;
+        return id == team.id &&
+                name.equals(team.name);
     }
 
-    public void setProjectList(List<Project> projectList) {
-        this.projectList = projectList;
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name);
     }
 }

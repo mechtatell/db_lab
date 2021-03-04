@@ -1,10 +1,11 @@
-package ru.mechtatell.view;
+package ru.mechtatell.views;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.stereotype.Component;
-import ru.mechtatell.dao.EmployeeDAO;
 
+import javax.annotation.PreDestroy;
 import javax.swing.*;
 
 @Component
@@ -32,10 +33,14 @@ public class MainFrame {
         showItemPosition.addActionListener(e -> appContext.getBean(PositionFrame.class).init());
 
         JMenu teamMenu = new JMenu("Бригада");
-        //teamMenu.addActionListener(e -> saveFile());
+        JMenuItem showItemTeam = new JMenuItem("Список бригад");
+        teamMenu.add(showItemTeam);
+        showItemTeam.addActionListener(e -> appContext.getBean(TeamFrame.class).init());
 
         JMenu projectMenu = new JMenu("Проект");
-        //projectMenu.addActionListener(e -> saveFile());
+        JMenuItem showItemProject = new JMenuItem("Список проектов");
+        projectMenu.add(showItemProject);
+        showItemProject.addActionListener(e -> appContext.getBean(ProjectFrame.class).init());
 
         JMenu planMenu = new JMenu("План");
         //planMenu.addActionListener(e -> saveFile());
@@ -52,5 +57,10 @@ public class MainFrame {
 
         frame.repaint();
         frame.setVisible(true);
+    }
+
+    @PreDestroy
+    private void close() {
+        ((AnnotationConfigApplicationContext) appContext).close();
     }
 }
