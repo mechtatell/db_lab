@@ -49,7 +49,7 @@ public class ProjectFrame {
         JButton buttonCreate = new JButton("Создать проект");
         frame.add(buttonCreate);
         buttonCreate.setBounds(720, 20, 160, 30);
-        buttonCreate.addActionListener(e -> createNewEmployee());
+        buttonCreate.addActionListener(e -> create());
 
         JButton buttomRemove = new JButton("Удалить проект");
         frame.add(buttomRemove);
@@ -162,7 +162,7 @@ public class ProjectFrame {
         return panelCreateProject;
     }
 
-    private void createNewEmployee() {
+    private void create() {
         JPanel employeePanel = getNewProjectPanel(null);
         int result = JOptionPane.showConfirmDialog(frame, employeePanel, "Создание сотрудника",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
@@ -181,13 +181,13 @@ public class ProjectFrame {
 
                 JTextField endDateField = (JTextField) ((JComponent) employeePanel.getComponent(0)).getComponent(7);
 
-                JComboBox<String> comboBoxPlan = (JComboBox<String>) ((JComponent)employeePanel.getComponent(0)).getComponent(10);
+                JComboBox<String> comboBoxPlan = (JComboBox<String>) ((JComponent) employeePanel.getComponent(0)).getComponent(10);
                 if (comboBoxPlan.getSelectedItem() == null) {
                     throw new Exception("Не выбран план");
                 }
 
                 List<Team> teams = new ArrayList<>();
-                JTable table = (JTable) ((JScrollPane) ((JComponent)employeePanel.getComponent(1)).getComponent(1)).getViewport().getView();
+                JTable table = (JTable) ((JScrollPane) ((JComponent) employeePanel.getComponent(1)).getComponent(1)).getViewport().getView();
 
                 for (int i = 0; i < table.getRowCount(); i++) {
                     boolean check = Boolean.parseBoolean((String.valueOf(table.getModel().getValueAt(i, 3))));
@@ -215,76 +215,92 @@ public class ProjectFrame {
             int resultError = JOptionPane.showConfirmDialog(frame, ex.getMessage(), "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
             if (resultError == JOptionPane.OK_OPTION) {
-                createNewEmployee();
+                create();
             }
         }
     }
 
     private void remove() {
-//        if (table.getSelectedRowCount() != 1) {
-//            JOptionPane.showConfirmDialog(frame, "Строка выбрана некорректно", "Ошибка",
-//                    JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
-//        }
-//
-//        int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(table.getSelectedRow(), 0)));
-//
-//        if (id > 0) {
-//            int resultError = JOptionPane.showConfirmDialog(frame, "Вы действительно хотите удалить запись?",
-//                    "Подтверждение", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
-//            if (resultError == JOptionPane.OK_OPTION) {
-//                employeeDAO.remove(id);
-//                refreshTable();
-//                table.clearSelection();
-//            }
-//        }
+        if (table.getSelectedRowCount() != 1) {
+            JOptionPane.showConfirmDialog(frame, "Строка выбрана некорректно", "Ошибка",
+                    JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
+        }
+
+        int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(table.getSelectedRow(), 0)));
+
+        if (id > 0) {
+            int resultError = JOptionPane.showConfirmDialog(frame, "Вы действительно хотите удалить запись?",
+                    "Подтверждение", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+            if (resultError == JOptionPane.OK_OPTION) {
+                projectDAO.remove(id);
+                refreshTable();
+                table.clearSelection();
+            }
+        }
     }
 
     private void update() {
-//        if (table.getSelectedRowCount() != 1) {
-//            JOptionPane.showConfirmDialog(frame, "Строка выбрана некорректно", "Ошибка",
-//                    JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
-//        }
-//
-//        int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(table.getSelectedRow(), 0)));
-//
-//        Employee employee = employeeDAO.show(id);
-//
-//        JPanel employeePanel = getNewEmployeePanel(employee.getFirstName(), employee.getLastName(), employee.getPosition().getId());
-//        int result = JOptionPane.showConfirmDialog(frame, employeePanel, "Изменение сотрудника",
-//                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-//
-//        try {
-//            if (result == JOptionPane.OK_OPTION) {
-//                JTextField firstNameField = (JTextField) employeePanel.getComponent(1);
-//                if (firstNameField.getText().isEmpty()) {
-//                    throw new Exception("Некорректный формат ФИО");
-//                }
-//
-//                JTextField lastNameField = (JTextField) employeePanel.getComponent(4);
-//                if (lastNameField.getText().isEmpty()) {
-//                    throw new Exception("Некорректный формат ФИО");
-//                }
-//
-//                JComboBox<String> comboBoxPosition = (JComboBox<String>) employeePanel.getComponent(7);
-//                if (comboBoxPosition.getSelectedItem() == null) {
-//                    throw new Exception("Не выбрана должность");
-//                }
-//
-//                String firstName = firstNameField.getText();
-//                String lastName = lastNameField.getText();
-//                int positionId = (int) comboBoxPosition.getSelectedItem();
-//
-//                Employee updatedEmployee = new Employee(firstName, lastName, positionDAO.show(positionId));
-//                employeeDAO.update(id, updatedEmployee);
-//                refreshTable();
-//
-//            }
-//        } catch (Exception ex) {
-//            int resultError = JOptionPane.showConfirmDialog(frame, ex.getMessage(), "Ошибка",
-//                    JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
-//            if (resultError == JOptionPane.OK_OPTION) {
-//                createNewEmployee();
-//            }
-//        }
+        int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(table.getSelectedRow(), 0)));
+
+        Project project = projectDAO.show(id);
+        JPanel projectPanel = getNewProjectPanel(project);
+        if (table.getSelectedRowCount() != 1) {
+            JOptionPane.showConfirmDialog(frame, "Строка выбрана некорректно", "Ошибка",
+                    JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
+        }
+
+        int result = JOptionPane.showConfirmDialog(frame, projectPanel, "Создание сотрудника",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+
+        try {
+            if (result == JOptionPane.OK_OPTION) {
+                JTextField nameField = (JTextField) ((JComponent) projectPanel.getComponent(0)).getComponent(1);
+                if (nameField.getText().isEmpty()) {
+                    throw new Exception("Некорректный формат имени");
+                }
+
+                JTextField startDateField = (JTextField) ((JComponent) projectPanel.getComponent(0)).getComponent(4);
+                if (nameField.getText().isEmpty()) {
+                    throw new Exception("Некорректный формат даты");
+                }
+
+                JTextField endDateField = (JTextField) ((JComponent) projectPanel.getComponent(0)).getComponent(7);
+
+                JComboBox<String> comboBoxPlan = (JComboBox<String>) ((JComponent) projectPanel.getComponent(0)).getComponent(10);
+                if (comboBoxPlan.getSelectedItem() == null) {
+                    throw new Exception("Не выбран план");
+                }
+
+                List<Team> teams = new ArrayList<>();
+                JTable table = (JTable) ((JScrollPane) ((JComponent) projectPanel.getComponent(1)).getComponent(1)).getViewport().getView();
+
+                for (int i = 0; i < table.getRowCount(); i++) {
+                    boolean check = Boolean.parseBoolean((String.valueOf(table.getModel().getValueAt(i, 3))));
+                    if (check) {
+                        int teamId = Integer.parseInt(String.valueOf(table.getModel().getValueAt(i, 0)));
+                        teams.add(teamDAO.show(teamId));
+                    }
+                }
+
+                String name = nameField.getText();
+                Plan plan = planDAO.show((Integer) comboBoxPlan.getSelectedItem());
+                System.out.println(startDateField.getText());
+                Date startDate = new Date(new SimpleDateFormat("dd.MM.yyyy").parse(startDateField.getText()).getTime());
+                Date endDate = null;
+                if (!endDateField.getText().equals("")) {
+                    endDate = new Date(new SimpleDateFormat("dd.MM.yyyy").parse(endDateField.getText()).getTime());
+                }
+
+                Project updatedProject = new Project(plan, name, startDate, endDate, teams);
+                projectDAO.update(id, updatedProject);
+                refreshTable();
+            }
+        } catch (Exception ex) {
+            int resultError = JOptionPane.showConfirmDialog(frame, ex.getMessage(), "Ошибка",
+                    JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
+            if (resultError == JOptionPane.OK_OPTION) {
+                create();
+            }
+        }
     }
 }
