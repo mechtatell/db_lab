@@ -7,6 +7,7 @@ import ru.mechtatell.models.Position;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
+import javax.tools.FileObject;
 import java.awt.*;
 
 @Component
@@ -14,7 +15,6 @@ public class PositionFrame {
     private JFrame frame;
     private JTable table;
     private JScrollPane scrollPane;
-
 
     private final PositionDAO positionDAO;
 
@@ -26,24 +26,30 @@ public class PositionFrame {
     public void init() {
         frame = new JFrame("Должности");
         frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        frame.setSize(710, 500);
+        frame.setSize(535, 500);
         frame.setLayout(null);
+        frame.setResizable(false);
 
         refreshTable();
 
-        JButton buttonCreate = new JButton("Создать должность");
+        JLabel labelMain = new JLabel("Должности");
+        frame.add(labelMain);
+        labelMain.setFont(new Font("Roboto", Font.BOLD, 16));
+        labelMain.setBounds(40, 10, 100, 30);
+
+        JButton buttonCreate = new JButton("Создать");
         frame.add(buttonCreate);
-        buttonCreate.setBounds(520, 20, 160, 30);
+        buttonCreate.setBounds(190, 10, 100, 30);
         buttonCreate.addActionListener(e -> create());
 
-        JButton buttomRemove = new JButton("Удалить должность");
+        JButton buttomRemove = new JButton("Удалить");
         frame.add(buttomRemove);
-        buttomRemove.setBounds(520, 60, 160, 30);
+        buttomRemove.setBounds(300, 10, 100, 30);
         buttomRemove.addActionListener(e -> remove());
 
-        JButton buttonUpdate = new JButton("Изменить должность");
+        JButton buttonUpdate = new JButton("Изменить");
         frame.add(buttonUpdate);
-        buttonUpdate.setBounds(520, 100, 160, 30);
+        buttonUpdate.setBounds(410, 10, 100, 30);
         buttonUpdate.addActionListener(e -> update());
 
         frame.repaint();
@@ -71,7 +77,7 @@ public class PositionFrame {
         }
         scrollPane = new JScrollPane(table);
         frame.add(scrollPane);
-        scrollPane.setBounds(5, 5, 500, 450);
+        scrollPane.setBounds(10, 50, 500, 402);
         frame.repaint();
     }
 
@@ -83,13 +89,12 @@ public class PositionFrame {
         JTextField textFieldName = new JTextField(name, 10);
         JTextField textFieldPayment = new JTextField(payment, 10);
 
-        panelPosition.setLayout(new GridLayout(8, 1));
+        panelPosition.setLayout(new GridLayout(6, 1));
         panelPosition.add(labelName);
         panelPosition.add(textFieldName);
         panelPosition.add(Box.createVerticalStrut(10));
         panelPosition.add(labelPayment);
         panelPosition.add(textFieldPayment);
-        panelPosition.add(Box.createVerticalStrut(10));
 
         return panelPosition;
     }
@@ -150,6 +155,7 @@ public class PositionFrame {
         if (table.getSelectedRowCount() != 1) {
             JOptionPane.showConfirmDialog(frame, "Строка выбрана некорректно", "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
+            return;
         }
 
         int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(table.getSelectedRow(), 0)));

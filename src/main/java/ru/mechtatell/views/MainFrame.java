@@ -43,10 +43,14 @@ public class MainFrame {
         showItemProject.addActionListener(e -> appContext.getBean(ProjectFrame.class).init());
 
         JMenu planMenu = new JMenu("План");
-        //planMenu.addActionListener(e -> saveFile());
+        JMenuItem showItemPlan = new JMenuItem("Список планов");
+        planMenu.add(showItemPlan);
+        showItemPlan.addActionListener(e -> appContext.getBean(PlanFrame.class).init());
 
         JMenu materialMenu = new JMenu("Материал");
-        //materialMenu.addActionListener(e -> saveFile());
+        JMenuItem showItemMaterial = new JMenuItem("Список материалов");
+        materialMenu.add(showItemMaterial);
+        showItemMaterial.addActionListener(e -> appContext.getBean(MaterialFrame.class).init());
 
         menuBar.add(employeeMenu);
         menuBar.add(positionMenu);

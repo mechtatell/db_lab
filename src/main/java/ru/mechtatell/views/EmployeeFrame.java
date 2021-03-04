@@ -31,24 +31,30 @@ public class EmployeeFrame {
     public void init() {
         frame = new JFrame("Работники");
         frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        frame.setSize(710, 500);
+        frame.setSize(535, 500);
         frame.setLayout(null);
+        frame.setResizable(false);
 
         refreshTable();
 
-        JButton buttonCreate = new JButton("Создать работника");
-        frame.add(buttonCreate);
-        buttonCreate.setBounds(520, 20, 160, 30);
-        buttonCreate.addActionListener(e -> createNewEmployee());
+        JLabel labelMain = new JLabel("Работники");
+        frame.add(labelMain);
+        labelMain.setFont(new Font("Roboto", Font.BOLD, 16));
+        labelMain.setBounds(40, 10, 100, 30);
 
-        JButton buttomRemove = new JButton("Уволить работника");
+        JButton buttonCreate = new JButton("Создать");
+        frame.add(buttonCreate);
+        buttonCreate.setBounds(190, 10, 100, 30);
+        buttonCreate.addActionListener(e -> create());
+
+        JButton buttomRemove = new JButton("Удалить");
         frame.add(buttomRemove);
-        buttomRemove.setBounds(520, 60, 160, 30);
+        buttomRemove.setBounds(300, 10, 100, 30);
         buttomRemove.addActionListener(e -> remove());
 
-        JButton buttonUpdate = new JButton("Изменить работника");
+        JButton buttonUpdate = new JButton("Изменить");
         frame.add(buttonUpdate);
-        buttonUpdate.setBounds(520, 100, 160, 30);
+        buttonUpdate.setBounds(410, 10, 100, 30);
         buttonUpdate.addActionListener(e -> update());
 
         frame.repaint();
@@ -77,23 +83,23 @@ public class EmployeeFrame {
         }
         scrollPane = new JScrollPane(table);
         frame.add(scrollPane);
-        scrollPane.setBounds(5, 5, 500, 450);
+        scrollPane.setBounds(10, 50, 500, 402);
         frame.repaint();
     }
 
-    private JPanel getNewEmployeePanel(String firstName, String lastName, int positionId) {
+    private JPanel getNewEmployeePanel(Employee employee) {
         JPanel panelCreateEmployee = new JPanel();
         JLabel labelFirstName = new JLabel("Введите имя");
         JLabel labelLastName = new JLabel("Введите фамилию");
         JLabel labelPosition = new JLabel("Выберете должность");
 
-        JTextField textFieldFirstName = new JTextField(firstName, 10);
-        JTextField textFieldLastName = new JTextField(lastName, 10);
+        JTextField textFieldFirstName = new JTextField(employee != null ? employee.getFirstName() : "", 10);
+        JTextField textFieldLastName = new JTextField(employee != null ? employee.getLastName() : "", 10);
 
         Position[] positions = positionDAO.index().toArray(new Position[0]);
         ComboBoxPosition comboBoxPositionModel = new ComboBoxPosition(positions);
         JComboBox<Position> comboBoxPosition = new JComboBox<>(comboBoxPositionModel);
-        comboBoxPosition.setSelectedItem(positionId);
+        comboBoxPosition.setSelectedIndex(employee != null ? comboBoxPositionModel.getIndexOf(employee.getPosition()) : -1);
 
         panelCreateEmployee.setLayout(new GridLayout(9, 1));
         panelCreateEmployee.add(labelFirstName);
@@ -109,8 +115,8 @@ public class EmployeeFrame {
         return panelCreateEmployee;
     }
 
-    private void createNewEmployee() {
-        JPanel employeePanel = getNewEmployeePanel("", "", 1);
+    private void create() {
+        JPanel employeePanel = getNewEmployeePanel(null);
         int result = JOptionPane.showConfirmDialog(frame, employeePanel, "Создание сотрудника",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
@@ -143,7 +149,7 @@ public class EmployeeFrame {
             int resultError = JOptionPane.showConfirmDialog(frame, ex.getMessage(), "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
             if (resultError == JOptionPane.OK_OPTION) {
-                createNewEmployee();
+                create();
             }
         }
     }
@@ -177,7 +183,7 @@ public class EmployeeFrame {
 
         Employee employee = employeeDAO.show(id);
 
-        JPanel employeePanel = getNewEmployeePanel(employee.getFirstName(), employee.getLastName(), employee.getPosition().getId());
+        JPanel employeePanel = getNewEmployeePanel(employee);
         int result = JOptionPane.showConfirmDialog(frame, employeePanel, "Изменение сотрудника",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
@@ -205,13 +211,12 @@ public class EmployeeFrame {
                 Employee updatedEmployee = new Employee(firstName, lastName, positionDAO.show(positionId));
                 employeeDAO.update(id, updatedEmployee);
                 refreshTable();
-
             }
         } catch (Exception ex) {
             int resultError = JOptionPane.showConfirmDialog(frame, ex.getMessage(), "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
             if (resultError == JOptionPane.OK_OPTION) {
-                createNewEmployee();
+                update();
             }
         }
     }

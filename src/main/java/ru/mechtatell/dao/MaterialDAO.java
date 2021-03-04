@@ -29,8 +29,8 @@ public class MaterialDAO {
         return jdbcTemplate.query("SELECT * FROM material", context.getBean(MaterialMapper.class));
     }
 
-    public Map<Material, Integer> indexMap() {
-        return jdbcTemplate.query("SELECT * FROM material_plan", context.getBean(MaterialMapperMap.class))
+    public Map<Material, Integer> indexMap(int id) {
+        return jdbcTemplate.query("SELECT * FROM material_plan WHERE plan_id=?", context.getBean(MaterialMapperMap.class), id)
                 .stream().collect(Collectors.toMap(CountOfMaterial::getMaterial, CountOfMaterial::getCount));
     }
 
@@ -42,6 +42,10 @@ public class MaterialDAO {
     public Map<Material, Integer> indexOnPlan(int planId) {
         return jdbcTemplate.query("SELECT * FROM material_plan WHERE plan_id=?", context.getBean(MaterialMapperMap.class),
                 planId).stream().collect(Collectors.toMap(CountOfMaterial::getMaterial, CountOfMaterial::getCount));
+    }
+
+    public void save(Material material) {
+        jdbcTemplate.update("INSERT INTO material (name, price) VALUES (?, ?)", material.getName(), material.getPrice());
     }
 
     public void update(int id, Material updatedMaterial) {

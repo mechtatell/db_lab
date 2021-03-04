@@ -24,7 +24,7 @@ public class PlanMapper implements RowMapper<Plan> {
         plan.setId(resultSet.getInt("id"));
         plan.setConstructionType(resultSet.getString("construction_type"));
         plan.setFloorsCount(resultSet.getInt("floors_count"));
-        plan.setMaterialList(materialDAO.indexMap());
+        plan.setMaterialList(materialDAO.indexMap(plan.getId()));
 
         return plan;
     }

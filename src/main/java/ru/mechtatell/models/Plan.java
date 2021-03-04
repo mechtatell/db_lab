@@ -2,6 +2,7 @@ package ru.mechtatell.models;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class Plan {
     private int id;
@@ -53,5 +54,20 @@ public class Plan {
     @Override
     public String toString() {
         return constructionType;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Plan plan = (Plan) o;
+        return id == plan.id &&
+                floorsCount == plan.floorsCount &&
+                constructionType.equals(plan.constructionType);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, constructionType, floorsCount);
     }
 }

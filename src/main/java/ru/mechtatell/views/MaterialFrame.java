@@ -2,35 +2,28 @@ package ru.mechtatell.views;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import ru.mechtatell.dao.EmployeeDAO;
-import ru.mechtatell.dao.TeamDAO;
-import ru.mechtatell.models.Employee;
-import ru.mechtatell.models.Team;
-import ru.mechtatell.views.components.TableEmployee;
+import ru.mechtatell.dao.MaterialDAO;
+import ru.mechtatell.models.Material;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.List;
 
 @Component
-public class TeamFrame {
+public class MaterialFrame {
     private JFrame frame;
     private JTable table;
     private JScrollPane scrollPane;
 
-    private final EmployeeDAO employeeDAO;
-    private final TeamDAO teamDAO;
+    private final MaterialDAO materialDAO;
 
     @Autowired
-    public TeamFrame(EmployeeDAO employeeDAO, TeamDAO teamDAO) {
-        this.employeeDAO = employeeDAO;
-        this.teamDAO = teamDAO;
+    public MaterialFrame(MaterialDAO MaterialDAO) {
+        this.materialDAO = MaterialDAO;
     }
 
     public void init() {
-        frame = new JFrame("Бригады");
+        frame = new JFrame("Материалы");
         frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         frame.setSize(535, 500);
         frame.setLayout(null);
@@ -38,7 +31,7 @@ public class TeamFrame {
 
         refreshTable();
 
-        JLabel labelMain = new JLabel("Бригады");
+        JLabel labelMain = new JLabel("Материалы");
         frame.add(labelMain);
         labelMain.setFont(new Font("Roboto", Font.BOLD, 16));
         labelMain.setBounds(40, 10, 100, 30);
@@ -63,16 +56,16 @@ public class TeamFrame {
     }
 
     private void refreshTable() {
-        List<Team> teamList = teamDAO.index();
-        Object[][] data = new String[teamList.size()][3];
+        java.util.List<Material> materialList = materialDAO.index();
+        Object[][] data = new String[materialList.size()][3];
 
         for (int i = 0; i < data.length; i++) {
-            data[i][0] = String.valueOf(teamList.get(i).getId());
-            data[i][1] = teamList.get(i).getName();
-            data[i][2] = String.valueOf(teamList.get(i).getEmployeeList().size());
+            data[i][0] = String.valueOf(materialList.get(i).getId());
+            data[i][1] = materialList.get(i).getName();
+            data[i][2] = String.valueOf(materialList.get(i).getPrice());
         }
 
-        String[] header = {"id", "Название", "Число сотрудников"};
+        String[] header = {"id", "Название", "Стоимость"};
         table = new JTable(data, header);
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(JLabel.CENTER);
@@ -87,68 +80,46 @@ public class TeamFrame {
         frame.repaint();
     }
 
-    private JPanel getNewTeamPanel(String name, List<Employee> employeeList, Team team) {
-        JPanel panelCreateTeam = new JPanel();
-        JLabel labelName = new JLabel("Введите имя");
-        JLabel labelEmployees = new JLabel("Выберете сотрудников");
+    private JPanel getMaterialPanel(String name, String price) {
+        JPanel panelMaterial = new JPanel();
+        JLabel labelName = new JLabel("Введите название");
+        JLabel labelPrice = new JLabel("Введите стоимость");
 
-        TableEmployee model = new TableEmployee();
-        for (Employee employee : employeeList) {
-            boolean check = false;
-            if (team != null) {
-                check = team.getEmployeeList().contains(employee);
-            }
-            model.addRow(new Object[]{employee.getId(), employee.getFirstName(), employee.getLastName(), employee.getPosition(), check});
-        }
-        JTable table = new JTable(model);
-        JScrollPane scrollPane = new JScrollPane(table);
         JTextField textFieldName = new JTextField(name, 10);
-        textFieldName.setMaximumSize(new Dimension(400, 30));
-        panelCreateTeam.setLayout(new BoxLayout(panelCreateTeam, BoxLayout.Y_AXIS));
-        JPanel namePanel = new JPanel();
-        namePanel.setLayout(new BoxLayout(namePanel, BoxLayout.Y_AXIS));
-        namePanel.add(labelName);
-        namePanel.add(textFieldName);
-        namePanel.add(Box.createVerticalStrut(10));
+        JTextField textFieldPrice = new JTextField(price, 10);
 
-        JPanel employeePanel = new JPanel();
-        employeePanel.setLayout(new BoxLayout(employeePanel, BoxLayout.Y_AXIS));
-        employeePanel.add(labelEmployees);
-        employeePanel.add(scrollPane);
+        panelMaterial.setLayout(new GridLayout(6, 1));
+        panelMaterial.add(labelName);
+        panelMaterial.add(textFieldName);
+        panelMaterial.add(Box.createVerticalStrut(10));
+        panelMaterial.add(labelPrice);
+        panelMaterial.add(textFieldPrice);
 
-        panelCreateTeam.add(namePanel);
-        panelCreateTeam.add(employeePanel);
-
-        return panelCreateTeam;
+        return panelMaterial;
     }
 
     private void create() {
-        JPanel employeePanel = getNewTeamPanel("", employeeDAO.index(), null);
-        int result = JOptionPane.showConfirmDialog(frame, employeePanel, "Создание бригады",
+        JPanel materialPanel = getMaterialPanel("", "");
+        int result = JOptionPane.showConfirmDialog(frame, materialPanel, "Создание материала",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         try {
             if (result == JOptionPane.OK_OPTION) {
-                JTextField nameField = (JTextField) ((JComponent) employeePanel.getComponent(0)).getComponent(1);
+                JTextField nameField = (JTextField) materialPanel.getComponent(1);
                 if (nameField.getText().isEmpty()) {
-                    throw new Exception("Некорректный формат имени");
+                    throw new Exception("Некорректный формат названия");
                 }
 
-                List<Employee> employees = new ArrayList<>();
-                JTable table = (JTable) ((JScrollPane) ((JComponent)employeePanel.getComponent(1)).getComponent(1)).getViewport().getView();
-
-                for (int i = 0; i < table.getRowCount(); i++) {
-                    boolean check = Boolean.parseBoolean((String.valueOf(table.getModel().getValueAt(i, 4))));
-                    if (check) {
-                        int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(i, 0)));
-                        employees.add(employeeDAO.show(id));
-                    }
+                JTextField priceField = (JTextField) materialPanel.getComponent(4);
+                if (priceField.getText().isEmpty()) {
+                    throw new Exception("Некорректный формат стоимости");
                 }
 
                 String name = nameField.getText();
+                double price = Double.parseDouble(priceField.getText());
 
-                Team team = new Team(name, employees);
-                teamDAO.save(team);
+                Material material = new Material(name, price);
+                materialDAO.save(material);
                 refreshTable();
             }
         } catch (Exception ex) {
@@ -172,7 +143,7 @@ public class TeamFrame {
             int resultError = JOptionPane.showConfirmDialog(frame, "Вы действительно хотите удалить запись?",
                     "Подтверждение", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
             if (resultError == JOptionPane.OK_OPTION) {
-                teamDAO.remove(id);
+                materialDAO.remove(id);
                 refreshTable();
                 table.clearSelection();
             }
@@ -187,42 +158,36 @@ public class TeamFrame {
 
         int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(table.getSelectedRow(), 0)));
 
-        Team team = teamDAO.show(id);
+        Material material = materialDAO.show(id);
 
-        JPanel employeePanel = getNewTeamPanel(team.getName(), employeeDAO.index(), team);
-        int result = JOptionPane.showConfirmDialog(frame, employeePanel, "Изменение бригады",
+        JPanel MaterialPanel = getMaterialPanel(material.getName(), String.valueOf(material.getPrice()));
+        int result = JOptionPane.showConfirmDialog(frame, MaterialPanel, "Редактирование материала",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         try {
             if (result == JOptionPane.OK_OPTION) {
-                JTextField nameField = (JTextField) ((JComponent) employeePanel.getComponent(0)).getComponent(1);
+                JTextField nameField = (JTextField) MaterialPanel.getComponent(1);
                 if (nameField.getText().isEmpty()) {
                     throw new Exception("Некорректный формат названия");
                 }
 
-                List<Employee> employeeList = new ArrayList<>();
-                JTable table = (JTable) ((JScrollPane) ((JComponent)employeePanel.getComponent(1)).getComponent(1)).getViewport().getView();
-
-                for (int i = 0; i < table.getRowCount(); i++) {
-                    boolean check = Boolean.parseBoolean((String.valueOf(table.getModel().getValueAt(i, 4))));
-                    if (check) {
-                        int employeeId = Integer.parseInt(String.valueOf(table.getModel().getValueAt(i, 0)));
-                        employeeList.add(employeeDAO.show(employeeId));
-                    }
+                JTextField priceField = (JTextField) MaterialPanel.getComponent(4);
+                if (priceField.getText().isEmpty()) {
+                    throw new Exception("Некорректный формат стоимости");
                 }
 
                 String name = nameField.getText();
+                double price = Double.parseDouble(priceField.getText());
 
-                Team updatedTeam = new Team(name, employeeList);
-                teamDAO.update(id, updatedTeam);
+                Material updatedMaterial = new Material(name, price);
+                materialDAO.update(id, updatedMaterial);
                 refreshTable();
-
             }
         } catch (Exception ex) {
             int resultError = JOptionPane.showConfirmDialog(frame, ex.getMessage(), "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
             if (resultError == JOptionPane.OK_OPTION) {
-                update();
+                create();
             }
         }
     }

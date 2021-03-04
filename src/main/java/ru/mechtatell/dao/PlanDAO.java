@@ -62,6 +62,6 @@ public class PlanDAO {
     }
 
     public void remove(int id) {
-        jdbcTemplate.update("DELETE FROM project WHERE id=?", id);
+        jdbcTemplate.update("DELETE FROM plan WHERE id=?", id);
     }
 }

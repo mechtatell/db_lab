@@ -16,6 +16,8 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.sql.Date;
+import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,24 +43,30 @@ public class ProjectFrame {
     public void init() {
         frame = new JFrame("Проект");
         frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        frame.setSize(910, 500);
+        frame.setSize(735, 500);
         frame.setLayout(null);
+        frame.setResizable(false);
 
         refreshTable();
 
-        JButton buttonCreate = new JButton("Создать проект");
+        JLabel labelMain = new JLabel("Проекты");
+        frame.add(labelMain);
+        labelMain.setFont(new Font("Roboto", Font.BOLD, 16));
+        labelMain.setBounds(180, 10, 100, 30);
+
+        JButton buttonCreate = new JButton("Создать");
         frame.add(buttonCreate);
-        buttonCreate.setBounds(720, 20, 160, 30);
+        buttonCreate.setBounds(390, 10, 100, 30);
         buttonCreate.addActionListener(e -> create());
 
-        JButton buttomRemove = new JButton("Удалить проект");
+        JButton buttomRemove = new JButton("Удалить");
         frame.add(buttomRemove);
-        buttomRemove.setBounds(720, 60, 160, 30);
+        buttomRemove.setBounds(500, 10, 100, 30);
         buttomRemove.addActionListener(e -> remove());
 
-        JButton buttonUpdate = new JButton("Изменить проект");
+        JButton buttonUpdate = new JButton("Изменить");
         frame.add(buttonUpdate);
-        buttonUpdate.setBounds(720, 100, 160, 30);
+        buttonUpdate.setBounds(610, 10, 100, 30);
         buttonUpdate.addActionListener(e -> update());
 
         frame.repaint();
@@ -73,7 +81,6 @@ public class ProjectFrame {
             data[i][0] = String.valueOf(projectList.get(i).getId());
             data[i][1] = projectList.get(i).getName();
             data[i][2] = String.valueOf(projectList.get(i).getPlan().getId());
-            System.out.println(projectList.get(i).getStartDate().toString());
             data[i][3] = projectList.get(i).getStartDate().toString();
             data[i][4] = projectList.get(i).getEndDate() != null ? projectList.get(i).getEndDate().toString() : "";
             data[i][5] = String.valueOf(projectList.get(i).getTeamList().size());
@@ -93,7 +100,7 @@ public class ProjectFrame {
         }
         scrollPane = new JScrollPane(table);
         frame.add(scrollPane);
-        scrollPane.setBounds(5, 5, 700, 450);
+        scrollPane.setBounds(10, 50, 700, 402);
         frame.repaint();
     }
 
@@ -128,12 +135,31 @@ public class ProjectFrame {
 
         JFormattedTextField textFieldStartDate = new JFormattedTextField(new SimpleDateFormat("dd.MM.yyyy"));
         textFieldStartDate.setMaximumSize(new Dimension(400, 30));
+
+        String formattedDate = "";
+        if (project != null) {
+            DateFormat targetFormat = new SimpleDateFormat("dd.MM.yyyy");
+            Date date = new Date(project.getStartDate().getTime());
+            formattedDate = targetFormat.format(date);
+        }
+        textFieldStartDate.setText(formattedDate);
+
         JFormattedTextField textFieldEndDate = new JFormattedTextField(new SimpleDateFormat("dd.MM.yyyy"));
         textFieldEndDate.setMaximumSize(new Dimension(400, 30));
+
+        formattedDate = "";
+        if (project != null && project.getEndDate() != null) {
+            DateFormat targetFormat = new SimpleDateFormat("dd.MM.yyyy");
+            Date date = new Date(project.getEndDate().getTime());
+            formattedDate = targetFormat.format(date);
+        }
+        labelEndDate.setText(formattedDate);
 
         Plan[] plans = planDAO.index().toArray(new Plan[0]);
         ComboBoxPlan comboBoxPlanModel = new ComboBoxPlan(plans);
         JComboBox<Plan> comboBoxPlan = new JComboBox<>(comboBoxPlanModel);
+        comboBoxPlan.setSelectedIndex(project != null ? comboBoxPlanModel.getIndexOf(project.getPlan()) : -1);
+        comboBoxPlan.setMaximumSize(new Dimension(400, 30));
 
         panelCreateProject.setLayout(new BoxLayout(panelCreateProject, BoxLayout.Y_AXIS));
         JPanel infoPanel = new JPanel();
@@ -164,7 +190,7 @@ public class ProjectFrame {
 
     private void create() {
         JPanel employeePanel = getNewProjectPanel(null);
-        int result = JOptionPane.showConfirmDialog(frame, employeePanel, "Создание сотрудника",
+        int result = JOptionPane.showConfirmDialog(frame, employeePanel, "Создание проекта",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         try {
@@ -199,7 +225,6 @@ public class ProjectFrame {
 
                 String name = nameField.getText();
                 Plan plan = planDAO.show((Integer) comboBoxPlan.getSelectedItem());
-                System.out.println(startDateField.getText());
                 Date startDate = new Date(new SimpleDateFormat("dd.MM.yyyy").parse(startDateField.getText()).getTime());
                 Date endDate = null;
                 if (!endDateField.getText().equals("")) {
@@ -211,7 +236,6 @@ public class ProjectFrame {
                 refreshTable();
             }
         } catch (Exception ex) {
-            System.out.println(Arrays.toString(ex.getStackTrace()));
             int resultError = JOptionPane.showConfirmDialog(frame, ex.getMessage(), "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
             if (resultError == JOptionPane.OK_OPTION) {
@@ -249,7 +273,7 @@ public class ProjectFrame {
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
         }
 
-        int result = JOptionPane.showConfirmDialog(frame, projectPanel, "Создание сотрудника",
+        int result = JOptionPane.showConfirmDialog(frame, projectPanel, "Изменение проекта",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         try {
@@ -284,7 +308,6 @@ public class ProjectFrame {
 
                 String name = nameField.getText();
                 Plan plan = planDAO.show((Integer) comboBoxPlan.getSelectedItem());
-                System.out.println(startDateField.getText());
                 Date startDate = new Date(new SimpleDateFormat("dd.MM.yyyy").parse(startDateField.getText()).getTime());
                 Date endDate = null;
                 if (!endDateField.getText().equals("")) {
@@ -299,7 +322,7 @@ public class ProjectFrame {
             int resultError = JOptionPane.showConfirmDialog(frame, ex.getMessage(), "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
             if (resultError == JOptionPane.OK_OPTION) {
-                create();
+                update();
             }
         }
     }

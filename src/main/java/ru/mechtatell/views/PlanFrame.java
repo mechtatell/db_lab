@@ -2,21 +2,19 @@ package ru.mechtatell.views;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import ru.mechtatell.dao.EmployeeDAO;
 import ru.mechtatell.dao.MaterialDAO;
 import ru.mechtatell.dao.PlanDAO;
-import ru.mechtatell.dao.TeamDAO;
-import ru.mechtatell.models.Employee;
 import ru.mechtatell.models.Material;
 import ru.mechtatell.models.Plan;
-import ru.mechtatell.models.Team;
-import ru.mechtatell.views.components.TableEmployee;
+import ru.mechtatell.views.components.TableMaterial;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class PlanFrame {
@@ -36,24 +34,30 @@ public class PlanFrame {
     public void init() {
         frame = new JFrame("Планы");
         frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        frame.setSize(710, 500);
+        frame.setSize(535, 500);
         frame.setLayout(null);
+        frame.setResizable(false);
 
         refreshTable();
 
-        JButton buttonCreate = new JButton("Создать план");
+        JLabel labelMain = new JLabel("Планы");
+        frame.add(labelMain);
+        labelMain.setFont(new Font("Roboto", Font.BOLD, 16));
+        labelMain.setBounds(40, 10, 100, 30);
+
+        JButton buttonCreate = new JButton("Создать");
         frame.add(buttonCreate);
-        buttonCreate.setBounds(520, 20, 160, 30);
+        buttonCreate.setBounds(190, 10, 100, 30);
         buttonCreate.addActionListener(e -> create());
 
-        JButton buttomRemove = new JButton("Удалить план");
+        JButton buttomRemove = new JButton("Удалить");
         frame.add(buttomRemove);
-        buttomRemove.setBounds(520, 60, 160, 30);
+        buttomRemove.setBounds(300, 10, 100, 30);
         buttomRemove.addActionListener(e -> remove());
 
-        JButton buttonUpdate = new JButton("Изменить план");
+        JButton buttonUpdate = new JButton("Изменить");
         frame.add(buttonUpdate);
-        buttonUpdate.setBounds(520, 100, 160, 30);
+        buttonUpdate.setBounds(410, 10, 100, 30);
         buttonUpdate.addActionListener(e -> update());
 
         frame.repaint();
@@ -82,72 +86,93 @@ public class PlanFrame {
         }
         scrollPane = new JScrollPane(table);
         frame.add(scrollPane);
-        scrollPane.setBounds(5, 5, 500, 450);
+        scrollPane.setBounds(10, 50, 500, 402);
         frame.repaint();
     }
 
-    private JPanel getNewTeamPanel(Plan plan) {
+    private JPanel getNewPlanPanel(Plan plan) {
         JPanel panelCreateTeam = new JPanel();
-        JLabel labelName = new JLabel("Введите имя");
-        JLabel labelEmployees = new JLabel("Выберете сотрудников");
+        JLabel labelType = new JLabel("Введите тип конструкции");
+        JLabel labelFloors = new JLabel("Введите количество этажей");
+        JLabel labelMaterials = new JLabel("Выберете материалы");
 
-        TableEmployee model = new TableEmployee();
-        for (Employee employee : plan.get) {
+        TableMaterial model = new TableMaterial();
+        for (Material material : materialDAO.index()) {
             boolean check = false;
-            if (team != null) {
-                check = team.getEmployeeList().contains(employee);
+            int count = 0;
+            if (plan != null) {
+                check = plan.getMaterialList().containsKey(material);
+                if (check) {
+                    count = plan.getMaterialList().get(material);
+                }
             }
-            model.addRow(new Object[]{employee.getId(), employee.getFirstName(), employee.getLastName(), employee.getPosition(), check});
+            model.addRow(new Object[]{material.getId(), material.getName(), material.getPrice(), count, check});
         }
+
         JTable table = new JTable(model);
         JScrollPane scrollPane = new JScrollPane(table);
-        JTextField textFieldName = new JTextField(name, 10);
-        textFieldName.setMaximumSize(new Dimension(400, 30));
+
+        JTextField textFieldType = new JTextField(plan != null ? plan.getConstructionType() : "", 10);
+        textFieldType.setMaximumSize(new Dimension(400, 30));
+
+        JTextField textFieldFloors = new JTextField(plan != null ? String.valueOf(plan.getFloorsCount()) : "", 10);
+        textFieldFloors.setMaximumSize(new Dimension(400, 30));
+
         panelCreateTeam.setLayout(new BoxLayout(panelCreateTeam, BoxLayout.Y_AXIS));
         JPanel namePanel = new JPanel();
         namePanel.setLayout(new BoxLayout(namePanel, BoxLayout.Y_AXIS));
-        namePanel.add(labelName);
-        namePanel.add(textFieldName);
+        namePanel.add(labelType);
+        namePanel.add(textFieldType);
+        namePanel.add(Box.createVerticalStrut(10));
+        namePanel.add(labelFloors);
+        namePanel.add(textFieldFloors);
         namePanel.add(Box.createVerticalStrut(10));
 
-        JPanel employeePanel = new JPanel();
-        employeePanel.setLayout(new BoxLayout(employeePanel, BoxLayout.Y_AXIS));
-        employeePanel.add(labelEmployees);
-        employeePanel.add(scrollPane);
+        JPanel materialPanel = new JPanel();
+        materialPanel.setLayout(new BoxLayout(materialPanel, BoxLayout.Y_AXIS));
+        materialPanel.add(labelMaterials);
+        materialPanel.add(scrollPane);
 
         panelCreateTeam.add(namePanel);
-        panelCreateTeam.add(employeePanel);
+        panelCreateTeam.add(materialPanel);
 
         return panelCreateTeam;
     }
 
     private void create() {
-        JPanel employeePanel = getNewTeamPanel("", employeeDAO.index(), null);
-        int result = JOptionPane.showConfirmDialog(frame, employeePanel, "Создание бригады",
+        JPanel planPanel = getNewPlanPanel(null);
+        int result = JOptionPane.showConfirmDialog(frame, planPanel, "Создание плана",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         try {
             if (result == JOptionPane.OK_OPTION) {
-                JTextField nameField = (JTextField) ((JComponent) employeePanel.getComponent(0)).getComponent(1);
-                if (nameField.getText().isEmpty()) {
-                    throw new Exception("Некорректный формат имени");
+                JTextField typeField = (JTextField) ((JComponent) planPanel.getComponent(0)).getComponent(1);
+                if (typeField.getText().isEmpty()) {
+                    throw new Exception("Некорректный формат типа конструкции");
                 }
 
-                List<Employee> employees = new ArrayList<>();
-                JTable table = (JTable) ((JScrollPane) ((JComponent)employeePanel.getComponent(1)).getComponent(1)).getViewport().getView();
+                JTextField floorsField = (JTextField) ((JComponent) planPanel.getComponent(0)).getComponent(4);
+                if (floorsField.getText().isEmpty()) {
+                    throw new Exception("Некорректный формат количества этажей");
+                }
+
+                Map<Material, Integer> materials = new HashMap<>();
+                JTable table = (JTable) ((JScrollPane) ((JComponent)planPanel.getComponent(1)).getComponent(1)).getViewport().getView();
 
                 for (int i = 0; i < table.getRowCount(); i++) {
                     boolean check = Boolean.parseBoolean((String.valueOf(table.getModel().getValueAt(i, 4))));
                     if (check) {
                         int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(i, 0)));
-                        employees.add(employeeDAO.show(id));
+                        int count = Integer.parseInt(String.valueOf(table.getModel().getValueAt(i, 3)));
+                        materials.put(materialDAO.show(id), count);
                     }
                 }
 
-                String name = nameField.getText();
+                String type = typeField.getText();
+                int floorsCount = Integer.parseInt(floorsField.getText());
 
-                Team team = new Team(name, employees);
-                teamDAO.save(team);
+                Plan plan = new Plan(type, floorsCount, materials);
+                planDAO.save(plan);
                 refreshTable();
             }
         } catch (Exception ex) {
@@ -171,7 +196,7 @@ public class PlanFrame {
             int resultError = JOptionPane.showConfirmDialog(frame, "Вы действительно хотите удалить запись?",
                     "Подтверждение", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
             if (resultError == JOptionPane.OK_OPTION) {
-                teamDAO.remove(id);
+                planDAO.remove(id);
                 refreshTable();
                 table.clearSelection();
             }
@@ -182,46 +207,53 @@ public class PlanFrame {
         if (table.getSelectedRowCount() != 1) {
             JOptionPane.showConfirmDialog(frame, "Строка выбрана некорректно", "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
+            return;
         }
 
         int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(table.getSelectedRow(), 0)));
 
-        Team team = teamDAO.show(id);
+        Plan plan = planDAO.show(id);
 
-        JPanel employeePanel = getNewTeamPanel(team.getName(), employeeDAO.index(), team);
-        int result = JOptionPane.showConfirmDialog(frame, employeePanel, "Изменение бригады",
+        JPanel planPanel = getNewPlanPanel(plan);
+        int result = JOptionPane.showConfirmDialog(frame, planPanel, "Изменение плана",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         try {
             if (result == JOptionPane.OK_OPTION) {
-                JTextField nameField = (JTextField) ((JComponent) employeePanel.getComponent(0)).getComponent(1);
-                if (nameField.getText().isEmpty()) {
-                    throw new Exception("Некорректный формат названия");
+                JTextField typeField = (JTextField) ((JComponent) planPanel.getComponent(0)).getComponent(1);
+                if (typeField.getText().isEmpty()) {
+                    throw new Exception("Некорректный формат типа конструкции");
                 }
 
-                List<Employee> employeeList = new ArrayList<>();
-                JTable table = (JTable) ((JScrollPane) ((JComponent)employeePanel.getComponent(1)).getComponent(1)).getViewport().getView();
+                JTextField floorsField = (JTextField) ((JComponent) planPanel.getComponent(0)).getComponent(4);
+                if (floorsField.getText().isEmpty()) {
+                    throw new Exception("Некорректный формат количества этажей");
+                }
+
+                Map<Material, Integer> materials = new HashMap<>();
+                JTable table = (JTable) ((JScrollPane) ((JComponent)planPanel.getComponent(1)).getComponent(1)).getViewport().getView();
 
                 for (int i = 0; i < table.getRowCount(); i++) {
                     boolean check = Boolean.parseBoolean((String.valueOf(table.getModel().getValueAt(i, 4))));
                     if (check) {
-                        int employeeId = Integer.parseInt(String.valueOf(table.getModel().getValueAt(i, 0)));
-                        employeeList.add(employeeDAO.show(employeeId));
+                        int materialId = Integer.parseInt(String.valueOf(table.getModel().getValueAt(i, 0)));
+                        int count = Integer.parseInt(String.valueOf(table.getModel().getValueAt(i, 3)));
+                        materials.put(materialDAO.show(materialId), count);
                     }
                 }
 
-                String name = nameField.getText();
+                String type = typeField.getText();
+                int floorsCount = Integer.parseInt(floorsField.getText());
 
-                Team updatedTeam = new Team(name, employeeList);
-                teamDAO.update(id, updatedTeam);
+                Plan updatedPlan = new Plan(type, floorsCount, materials);
+                planDAO.update(id, updatedPlan);
                 refreshTable();
-
             }
         } catch (Exception ex) {
             int resultError = JOptionPane.showConfirmDialog(frame, ex.getMessage(), "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
             if (resultError == JOptionPane.OK_OPTION) {
-                update();
+                create();
             }
         }
     }

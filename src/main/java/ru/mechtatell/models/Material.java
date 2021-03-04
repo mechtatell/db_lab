@@ -1,5 +1,7 @@
 package ru.mechtatell.models;
 
+import java.util.Objects;
+
 public class Material {
     private int id;
     private String name;
@@ -35,5 +37,20 @@ public class Material {
 
     public void setPrice(double price) {
         this.price = price;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Material material = (Material) o;
+        return id == material.id &&
+                Double.compare(material.price, price) == 0 &&
+                name.equals(material.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name, price);
     }
 }
