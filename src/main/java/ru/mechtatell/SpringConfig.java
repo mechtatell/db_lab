@@ -5,9 +5,9 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import ru.mechtatell.dao.mappers.LineMapperFirst;
-import ru.mechtatell.dao.mappers.LineMapperSecond;
-import ru.mechtatell.dao.mappers.LineMapperThird;
+import ru.mechtatell.DAO.mappers.LineMapperFirst;
+import ru.mechtatell.DAO.mappers.LineMapperSecond;
+import ru.mechtatell.DAO.mappers.LineMapperThird;
 
 import javax.sql.DataSource;
 import java.util.List;
@@ -20,9 +20,9 @@ public class SpringConfig {
     public DataSource dataSource() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
         dataSource.setDriverClassName("org.postgresql.Driver");
-        dataSource.setUrl("jdbc:postgresql://192.168.1.69:5432/db_lab");
-        dataSource.setUsername("mechtatell");
-        dataSource.setPassword("123qwe");
+        dataSource.setUrl("jdbc:postgresql://localhost/dblab5");
+        dataSource.setUsername("postgres");
+        dataSource.setPassword("3228");
 
         return dataSource;
     }

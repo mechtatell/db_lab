@@ -2,7 +2,7 @@ package ru.mechtatell;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import ru.mechtatell.views.MainFrame;
+import ru.mechtatell.Views.MainFrame;
 
 public class Main {
 
