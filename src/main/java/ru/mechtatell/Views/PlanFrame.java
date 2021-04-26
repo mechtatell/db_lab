@@ -9,7 +9,7 @@ import ru.mechtatell.Models.MaterialPlan;
 import ru.mechtatell.Models.Plan;
 import ru.mechtatell.Views.Util.CRUDLogic;
 import ru.mechtatell.Views.Util.Frame;
-import ru.mechtatell.Views.Util.components.TableMaterial;
+import ru.mechtatell.Views.Util.Components.TableMaterial;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;

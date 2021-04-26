@@ -10,8 +10,8 @@ import ru.mechtatell.Models.Project;
 import ru.mechtatell.Models.Team;
 import ru.mechtatell.Views.Util.CRUDLogic;
 import ru.mechtatell.Views.Util.Frame;
-import ru.mechtatell.Views.Util.components.ComboBoxPlan;
-import ru.mechtatell.Views.Util.components.TableTeam;
+import ru.mechtatell.Views.Util.Components.ComboBoxPlan;
+import ru.mechtatell.Views.Util.Components.TableTeam;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;

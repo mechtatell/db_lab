@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import ru.mechtatell.DAO.Interfaces.ProjectDAO;
 import ru.mechtatell.DAO.Repos.ProjectRepos;
+import ru.mechtatell.DAO.DTO.ProjectDTO;
 import ru.mechtatell.Models.Project;
 
 import java.util.List;
@@ -37,5 +38,10 @@ public class ProjectDAOImpl implements ProjectDAO {
     @Override
     public void remove(int id) {
         projectRepos.deleteById(id);
+    }
+
+    @Override
+    public List<ProjectDTO> findProjectStat() {
+        return projectRepos.findAllProjects();
     }
 }

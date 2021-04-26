@@ -14,14 +14,16 @@ public class Frame {
         frame.setLayout(null);
         frame.setResizable(false);
 
-        return frame;
-    }
-
-    protected void addNavigationButtons(String name, CRUDLogic logic) {
         JLabel labelMain = new JLabel(name);
         labelMain.setFont(new Font("Roboto", Font.BOLD, 16));
         labelMain.setBounds(40, 10, 100, 30);
 
+        frame.add(labelMain);
+
+        return frame;
+    }
+
+    protected void addNavigationButtons(String name, CRUDLogic logic) {
         JButton buttonCreate = new JButton("Создать");
         buttonCreate.setBounds(190, 10, 100, 30);
         buttonCreate.addActionListener(e -> logic.create());
@@ -34,7 +36,6 @@ public class Frame {
         buttonUpdate.setBounds(410, 10, 100, 30);
         buttonUpdate.addActionListener(e -> logic.update());
 
-        frame.add(labelMain);
         frame.add(buttonCreate);
         frame.add(buttomRemove);
         frame.add(buttonUpdate);

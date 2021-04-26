@@ -1,4 +1,4 @@
-package ru.mechtatell.Views.Util.components;
+package ru.mechtatell.Views.Util.Components;
 
 import ru.mechtatell.Models.Position;
 
