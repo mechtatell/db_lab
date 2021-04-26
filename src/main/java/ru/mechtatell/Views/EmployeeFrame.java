@@ -8,7 +8,7 @@ import ru.mechtatell.Models.Employee;
 import ru.mechtatell.Models.Position;
 import ru.mechtatell.Views.Util.CRUDLogic;
 import ru.mechtatell.Views.Util.Frame;
-import ru.mechtatell.ViewsOLD.components.ComboBoxPosition;
+import ru.mechtatell.Views.Util.components.ComboBoxPosition;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;

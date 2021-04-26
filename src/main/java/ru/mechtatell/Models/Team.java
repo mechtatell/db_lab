@@ -2,9 +2,12 @@ package ru.mechtatell.Models;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.LazyCollection;
+import org.hibernate.annotations.LazyCollectionOption;
 
 import javax.persistence.*;
 import java.util.List;
+import java.util.Objects;
 
 @Data
 @Entity
@@ -24,6 +27,7 @@ public class Team {
     )
     private List<Employee> employeeList;
 
+    @LazyCollection(LazyCollectionOption.FALSE)
     @ManyToMany(mappedBy = "teamList")
     private List<Project> projectList;
 

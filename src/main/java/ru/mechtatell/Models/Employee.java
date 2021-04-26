@@ -30,20 +30,4 @@ public class Employee {
         this.lastName = lastName;
         this.position = position;
     }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Employee employee = (Employee) o;
-        return id == employee.id &&
-                Objects.equals(firstName, employee.firstName) &&
-                Objects.equals(lastName, employee.lastName) &&
-                Objects.equals(position.getId(), employee.position.getId());
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, firstName, lastName, position);
-    }
 }

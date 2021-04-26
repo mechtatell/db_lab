@@ -10,8 +10,8 @@ import ru.mechtatell.Models.Project;
 import ru.mechtatell.Models.Team;
 import ru.mechtatell.Views.Util.CRUDLogic;
 import ru.mechtatell.Views.Util.Frame;
-import ru.mechtatell.ViewsOLD.components.ComboBoxPlan;
-import ru.mechtatell.ViewsOLD.components.TableTeam;
+import ru.mechtatell.Views.Util.components.ComboBoxPlan;
+import ru.mechtatell.Views.Util.components.TableTeam;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -20,6 +20,7 @@ import java.sql.Date;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Component
@@ -41,7 +42,7 @@ public class ProjectFrame extends Frame {
 
     public void init() {
         String NAME = "Проекты";
-        frame = super.init(NAME, 735, 500);
+        frame = super.init(NAME, 535, 500);
         refreshTable();
         super.addNavigationButtons(NAME, new CRUDLogic() {
             @Override
@@ -64,34 +65,41 @@ public class ProjectFrame extends Frame {
         frame.setVisible(true);
     }
 
-        private void refreshTable() {
+    private void refreshTable() {
         List<Project> projectList = projectDAO.findAll();
         Object[][] data = new String[projectList.size()][6];
+        SimpleDateFormat formatter = new SimpleDateFormat("dd.MM.yyyy");
 
         for (int i = 0; i < data.length; i++) {
             data[i][0] = String.valueOf(projectList.get(i).getId());
             data[i][1] = projectList.get(i).getName();
             data[i][2] = String.valueOf(projectList.get(i).getPlan().getConstructionType());
-            data[i][3] = projectList.get(i).getStartDate().toString();
-            data[i][4] = projectList.get(i).getEndDate() != null ? projectList.get(i).getEndDate().toString() : "";
+            data[i][3] = formatter.format(projectList.get(i).getStartDate());
+            data[i][4] = projectList.get(i).getEndDate() != null ? formatter.format(projectList.get(i).getEndDate()) : "";
             data[i][5] = String.valueOf(projectList.get(i).getTeamList().size());
         }
 
-        String[] header = {"id", "Название", "План", "Начало постройки", "Конец постройки", "Количество бригад"};
+        String[] header = {"id", "Название", "План", "Начало", "Завершение", "Бригады"};
 
         table = new JTable(data, header);
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(JLabel.CENTER);
         table.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
         table.getColumnModel().getColumn(0).setPreferredWidth(10);
+        table.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
         table.getColumnModel().getColumn(2).setCellRenderer(centerRenderer);
-        table.getColumnModel().getColumn(2).setPreferredWidth(10);
+        table.getColumnModel().getColumn(3).setCellRenderer(centerRenderer);
+        table.getColumnModel().getColumn(3).setPreferredWidth(40);
+        table.getColumnModel().getColumn(4).setCellRenderer(centerRenderer);
+        table.getColumnModel().getColumn(4).setPreferredWidth(40);
+        table.getColumnModel().getColumn(5).setCellRenderer(centerRenderer);
+        table.getColumnModel().getColumn(5).setPreferredWidth(15);
         if (scrollPane != null) {
             frame.remove(scrollPane);
         }
         scrollPane = new JScrollPane(table);
         frame.add(scrollPane);
-        scrollPane.setBounds(10, 50, 700, 402);
+        scrollPane.setBounds(10, 50, 500, 402);
         frame.repaint();
     }
 
@@ -107,7 +115,7 @@ public class ProjectFrame extends Frame {
         for (Team team : teamDAO.findAll()) {
             boolean check = false;
             if (project != null) {
-                check = project.getTeamList().contains(team);
+                check = team.getProjectList().stream().map(Project::getId).anyMatch(e -> e == project.getId());
             }
             model.addRow(new Object[]{team.getId(), team.getName(), team.getEmployeeList().size(), check});
         }
@@ -149,8 +157,18 @@ public class ProjectFrame extends Frame {
         Plan[] plans = planDAO.findAll().toArray(new Plan[0]);
         ComboBoxPlan comboBoxPlanModel = new ComboBoxPlan(plans);
         JComboBox<Plan> comboBoxPlan = new JComboBox<>(comboBoxPlanModel);
+
         comboBoxPlan.setSelectedIndex(project != null ? comboBoxPlanModel.getIndexOf(project.getPlan()) : -1);
         comboBoxPlan.setMaximumSize(new Dimension(400, 30));
+
+        if (project != null && project.getPlan() != null) {
+            Plan plan = Arrays.stream(plans)
+                    .filter(e -> e.getId() == project.getPlan().getId())
+                    .findAny().orElse(null);
+
+            int index = comboBoxPlanModel.getIndexOf(plan);
+            comboBoxPlan.setSelectedIndex(index);
+        }
 
         panelCreateProject.setLayout(new BoxLayout(panelCreateProject, BoxLayout.Y_AXIS));
         JPanel infoPanel = new JPanel();
@@ -229,7 +247,7 @@ public class ProjectFrame extends Frame {
         int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(table.getSelectedRow(), 0)));
 
         Project project;
-        if (planDAO.findById(id).isPresent()) {
+        if (projectDAO.findById(id).isPresent()) {
             project = projectDAO.findById(id).get();
         } else {
             return;
@@ -285,7 +303,7 @@ public class ProjectFrame extends Frame {
         }
 
         String name = nameField.getText();
-        Plan plan = planDAO.findById((Integer) comboBoxPlan.getSelectedItem()).get();
+        Plan plan = (Plan) comboBoxPlan.getSelectedItem();
         Date startDate = new Date(new SimpleDateFormat("dd.MM.yyyy").parse(startDateField.getText()).getTime());
         Date endDate = null;
         if (!endDateField.getText().equals("")) {

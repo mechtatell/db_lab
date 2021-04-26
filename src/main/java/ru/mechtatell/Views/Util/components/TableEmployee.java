@@ -1,4 +1,4 @@
-package ru.mechtatell.ViewsOLD.components;
+package ru.mechtatell.Views.Util.components;
 
 import javax.swing.table.DefaultTableModel;
 import java.util.Vector;

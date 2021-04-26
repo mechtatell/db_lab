@@ -8,7 +8,7 @@ import ru.mechtatell.Models.Employee;
 import ru.mechtatell.Models.Team;
 import ru.mechtatell.Views.Util.CRUDLogic;
 import ru.mechtatell.Views.Util.Frame;
-import ru.mechtatell.ViewsOLD.components.TableEmployee;
+import ru.mechtatell.Views.Util.components.TableEmployee;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;

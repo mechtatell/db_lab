@@ -1,4 +1,4 @@
-package ru.mechtatell.ViewsOLD.components;
+package ru.mechtatell.Views.Util.components;
 
 import ru.mechtatell.Models.Plan;
 
@@ -12,6 +12,6 @@ public class ComboBoxPlan extends DefaultComboBoxModel<Plan> {
 
     @Override
     public Object getSelectedItem() {
-        return super.getSelectedItem() != null ? ((Plan) super.getSelectedItem()).getId() : null;
+        return super.getSelectedItem() != null ? ((Plan) super.getSelectedItem()) : null;
     }
 }
