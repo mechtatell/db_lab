@@ -2,14 +2,16 @@ package ru.mechtatell.Views;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import ru.mechtatell.DAO.PlanDAO;
-import ru.mechtatell.DAO.ProjectDAO;
-import ru.mechtatell.DAO.TeamDAO;
+import ru.mechtatell.DAO.Interfaces.PlanDAO;
+import ru.mechtatell.DAO.Interfaces.ProjectDAO;
+import ru.mechtatell.DAO.Interfaces.TeamDAO;
 import ru.mechtatell.Models.Plan;
 import ru.mechtatell.Models.Project;
 import ru.mechtatell.Models.Team;
-import ru.mechtatell.Views.components.ComboBoxPlan;
-import ru.mechtatell.Views.components.TableTeam;
+import ru.mechtatell.Views.Util.CRUDLogic;
+import ru.mechtatell.Views.Util.Frame;
+import ru.mechtatell.ViewsOLD.components.ComboBoxPlan;
+import ru.mechtatell.ViewsOLD.components.TableTeam;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -21,63 +23,55 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
-public class ProjectFrame {
+public class ProjectFrame extends Frame {
     private JFrame frame;
     private JTable table;
     private JScrollPane scrollPane;
 
-    private final TeamDAO teamDAO;
     private final ProjectDAO projectDAO;
     private final PlanDAO planDAO;
+    private final TeamDAO teamDAO;
 
     @Autowired
-    public ProjectFrame(TeamDAO teamDAO, ProjectDAO projectDAO, PlanDAO planDAO) {
-        this.teamDAO = teamDAO;
+    public ProjectFrame(ProjectDAO projectDAO, PlanDAO planDAO, TeamDAO teamDAO) {
         this.projectDAO = projectDAO;
         this.planDAO = planDAO;
+        this.teamDAO = teamDAO;
     }
 
     public void init() {
-        frame = new JFrame("Проект");
-        frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        frame.setSize(735, 500);
-        frame.setLayout(null);
-        frame.setResizable(false);
-
+        String NAME = "Проекты";
+        frame = super.init(NAME, 735, 500);
         refreshTable();
+        super.addNavigationButtons(NAME, new CRUDLogic() {
+            @Override
+            public void create() {
+                createProject();
+            }
 
-        JLabel labelMain = new JLabel("Проекты");
-        frame.add(labelMain);
-        labelMain.setFont(new Font("Roboto", Font.BOLD, 16));
-        labelMain.setBounds(180, 10, 100, 30);
+            @Override
+            public void update() {
+                updateProject();
+            }
 
-        JButton buttonCreate = new JButton("Создать");
-        frame.add(buttonCreate);
-        buttonCreate.setBounds(390, 10, 100, 30);
-        buttonCreate.addActionListener(e -> create());
-
-        JButton buttomRemove = new JButton("Удалить");
-        frame.add(buttomRemove);
-        buttomRemove.setBounds(500, 10, 100, 30);
-        buttomRemove.addActionListener(e -> remove());
-
-        JButton buttonUpdate = new JButton("Изменить");
-        frame.add(buttonUpdate);
-        buttonUpdate.setBounds(610, 10, 100, 30);
-        buttonUpdate.addActionListener(e -> update());
+            @Override
+            public void remove() {
+                removeProject();
+            }
+        });
 
         frame.repaint();
         frame.setVisible(true);
     }
 
-    private void refreshTable() {
-        List<Project> projectList = projectDAO.index();
+        private void refreshTable() {
+        List<Project> projectList = projectDAO.findAll();
         Object[][] data = new String[projectList.size()][6];
 
         for (int i = 0; i < data.length; i++) {
             data[i][0] = String.valueOf(projectList.get(i).getId());
             data[i][1] = projectList.get(i).getName();
-            data[i][2] = String.valueOf(projectList.get(i).getPlan().getId());
+            data[i][2] = String.valueOf(projectList.get(i).getPlan().getConstructionType());
             data[i][3] = projectList.get(i).getStartDate().toString();
             data[i][4] = projectList.get(i).getEndDate() != null ? projectList.get(i).getEndDate().toString() : "";
             data[i][5] = String.valueOf(projectList.get(i).getTeamList().size());
@@ -110,7 +104,7 @@ public class ProjectFrame {
         JLabel labelPlan = new JLabel("Выберете план");
 
         TableTeam model = new TableTeam();
-        for (Team team : teamDAO.index()) {
+        for (Team team : teamDAO.findAll()) {
             boolean check = false;
             if (project != null) {
                 check = project.getTeamList().contains(team);
@@ -150,9 +144,9 @@ public class ProjectFrame {
             Date date = new Date(project.getEndDate().getTime());
             formattedDate = targetFormat.format(date);
         }
-        labelEndDate.setText(formattedDate);
+        textFieldEndDate.setText(formattedDate);
 
-        Plan[] plans = planDAO.index().toArray(new Plan[0]);
+        Plan[] plans = planDAO.findAll().toArray(new Plan[0]);
         ComboBoxPlan comboBoxPlanModel = new ComboBoxPlan(plans);
         JComboBox<Plan> comboBoxPlan = new JComboBox<>(comboBoxPlanModel);
         comboBoxPlan.setSelectedIndex(project != null ? comboBoxPlanModel.getIndexOf(project.getPlan()) : -1);
@@ -185,50 +179,14 @@ public class ProjectFrame {
         return panelCreateProject;
     }
 
-    private void create() {
-        JPanel employeePanel = getNewProjectPanel(null);
-        int result = JOptionPane.showConfirmDialog(frame, employeePanel, "Создание проекта",
+    private void createProject() {
+        JPanel planPanel = getNewProjectPanel(null);
+        int result = JOptionPane.showConfirmDialog(frame, planPanel, "Создание проекта",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         try {
             if (result == JOptionPane.OK_OPTION) {
-                JTextField nameField = (JTextField) ((JComponent) employeePanel.getComponent(0)).getComponent(1);
-                if (nameField.getText().isEmpty()) {
-                    throw new Exception("Некорректный формат имени");
-                }
-
-                JTextField startDateField = (JTextField) ((JComponent) employeePanel.getComponent(0)).getComponent(4);
-                if (nameField.getText().isEmpty()) {
-                    throw new Exception("Некорректный формат даты");
-                }
-
-                JTextField endDateField = (JTextField) ((JComponent) employeePanel.getComponent(0)).getComponent(7);
-
-                JComboBox<String> comboBoxPlan = (JComboBox<String>) ((JComponent) employeePanel.getComponent(0)).getComponent(10);
-                if (comboBoxPlan.getSelectedItem() == null) {
-                    throw new Exception("Не выбран план");
-                }
-
-                List<Team> teams = new ArrayList<>();
-                JTable table = (JTable) ((JScrollPane) ((JComponent) employeePanel.getComponent(1)).getComponent(1)).getViewport().getView();
-
-                for (int i = 0; i < table.getRowCount(); i++) {
-                    boolean check = Boolean.parseBoolean((String.valueOf(table.getModel().getValueAt(i, 3))));
-                    if (check) {
-                        int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(i, 0)));
-                        teams.add(teamDAO.show(id));
-                    }
-                }
-
-                String name = nameField.getText();
-                Plan plan = planDAO.show((Integer) comboBoxPlan.getSelectedItem());
-                Date startDate = new Date(new SimpleDateFormat("dd.MM.yyyy").parse(startDateField.getText()).getTime());
-                Date endDate = null;
-                if (!endDateField.getText().equals("")) {
-                    endDate = new Date(new SimpleDateFormat("dd.MM.yyyy").parse(endDateField.getText()).getTime());
-                }
-
-                Project project = new Project(plan, name, startDate, endDate, teams);
+                Project project = createProjectModel(planPanel);
                 projectDAO.save(project);
                 refreshTable();
             }
@@ -236,15 +194,16 @@ public class ProjectFrame {
             int resultError = JOptionPane.showConfirmDialog(frame, ex.getMessage(), "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
             if (resultError == JOptionPane.OK_OPTION) {
-                create();
+                createProject();
             }
         }
     }
 
-    private void remove() {
+    private void removeProject() {
         if (table.getSelectedRowCount() != 1) {
             JOptionPane.showConfirmDialog(frame, "Строка выбрана некорректно", "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
+            return;
         }
 
         int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(table.getSelectedRow(), 0)));
@@ -260,67 +219,79 @@ public class ProjectFrame {
         }
     }
 
-    private void update() {
-        int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(table.getSelectedRow(), 0)));
-
-        Project project = projectDAO.show(id);
-        JPanel projectPanel = getNewProjectPanel(project);
+    private void updateProject() {
         if (table.getSelectedRowCount() != 1) {
             JOptionPane.showConfirmDialog(frame, "Строка выбрана некорректно", "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
+            return;
         }
 
-        int result = JOptionPane.showConfirmDialog(frame, projectPanel, "Изменение проекта",
+        int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(table.getSelectedRow(), 0)));
+
+        Project project;
+        if (planDAO.findById(id).isPresent()) {
+            project = projectDAO.findById(id).get();
+        } else {
+            return;
+        }
+
+        JPanel projectPanel = getNewProjectPanel(project);
+        int result = JOptionPane.showConfirmDialog(frame, projectPanel, "Создание проекта",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         try {
             if (result == JOptionPane.OK_OPTION) {
-                JTextField nameField = (JTextField) ((JComponent) projectPanel.getComponent(0)).getComponent(1);
-                if (nameField.getText().isEmpty()) {
-                    throw new Exception("Некорректный формат имени");
-                }
-
-                JTextField startDateField = (JTextField) ((JComponent) projectPanel.getComponent(0)).getComponent(4);
-                if (nameField.getText().isEmpty()) {
-                    throw new Exception("Некорректный формат даты");
-                }
-
-                JTextField endDateField = (JTextField) ((JComponent) projectPanel.getComponent(0)).getComponent(7);
-
-                JComboBox<String> comboBoxPlan = (JComboBox<String>) ((JComponent) projectPanel.getComponent(0)).getComponent(10);
-                if (comboBoxPlan.getSelectedItem() == null) {
-                    throw new Exception("Не выбран план");
-                }
-
-                List<Team> teams = new ArrayList<>();
-                JTable table = (JTable) ((JScrollPane) ((JComponent) projectPanel.getComponent(1)).getComponent(1)).getViewport().getView();
-
-                for (int i = 0; i < table.getRowCount(); i++) {
-                    boolean check = Boolean.parseBoolean((String.valueOf(table.getModel().getValueAt(i, 3))));
-                    if (check) {
-                        int teamId = Integer.parseInt(String.valueOf(table.getModel().getValueAt(i, 0)));
-                        teams.add(teamDAO.show(teamId));
-                    }
-                }
-
-                String name = nameField.getText();
-                Plan plan = planDAO.show((Integer) comboBoxPlan.getSelectedItem());
-                Date startDate = new Date(new SimpleDateFormat("dd.MM.yyyy").parse(startDateField.getText()).getTime());
-                Date endDate = null;
-                if (!endDateField.getText().equals("")) {
-                    endDate = new Date(new SimpleDateFormat("dd.MM.yyyy").parse(endDateField.getText()).getTime());
-                }
-
-                Project updatedProject = new Project(plan, name, startDate, endDate, teams);
-                projectDAO.update(id, updatedProject);
+                Project updatedProject = createProjectModel(projectPanel);
+                updatedProject.setId(id);
+                projectDAO.save(updatedProject);
                 refreshTable();
             }
         } catch (Exception ex) {
             int resultError = JOptionPane.showConfirmDialog(frame, ex.getMessage(), "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
             if (resultError == JOptionPane.OK_OPTION) {
-                update();
+                updateProject();
             }
         }
+    }
+
+    private Project createProjectModel(JPanel projectPanel) throws Exception {
+        JTextField nameField = (JTextField) ((JComponent) projectPanel.getComponent(0)).getComponent(1);
+        if (nameField.getText().isEmpty()) {
+            throw new Exception("Некорректный формат имени");
+        }
+
+        JTextField startDateField = (JTextField) ((JComponent) projectPanel.getComponent(0)).getComponent(4);
+        if (nameField.getText().isEmpty()) {
+            throw new Exception("Некорректный формат даты");
+        }
+
+        JTextField endDateField = (JTextField) ((JComponent) projectPanel.getComponent(0)).getComponent(7);
+
+        JComboBox<String> comboBoxPlan = (JComboBox<String>) ((JComponent) projectPanel.getComponent(0)).getComponent(10);
+        if (comboBoxPlan.getSelectedItem() == null) {
+            throw new Exception("Не выбран план");
+        }
+
+        List<Team> teams = new ArrayList<>();
+        JTable table = (JTable) ((JScrollPane) ((JComponent) projectPanel.getComponent(1)).getComponent(1)).getViewport().getView();
+
+        for (int i = 0; i < table.getRowCount(); i++) {
+            boolean check = Boolean.parseBoolean((String.valueOf(table.getModel().getValueAt(i, 3))));
+            if (check) {
+                int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(i, 0)));
+                teams.add(teamDAO.findById(id).get());
+            }
+        }
+
+        String name = nameField.getText();
+        Plan plan = planDAO.findById((Integer) comboBoxPlan.getSelectedItem()).get();
+        Date startDate = new Date(new SimpleDateFormat("dd.MM.yyyy").parse(startDateField.getText()).getTime());
+        Date endDate = null;
+        if (!endDateField.getText().equals("")) {
+            endDate = new Date(new SimpleDateFormat("dd.MM.yyyy").parse(endDateField.getText()).getTime());
+        }
+
+        return new Project(plan, name, startDate, endDate, teams);
     }
 }

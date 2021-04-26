@@ -1,6 +1,7 @@
 package ru.mechtatell.Models;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
 import java.util.List;
@@ -8,13 +9,14 @@ import java.util.List;
 @Data
 @Entity
 @Table(name = "team")
+@NoArgsConstructor
 public class Team {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
     private String name;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "employee_team",
             joinColumns = @JoinColumn(name = "team_id"),
@@ -24,4 +26,9 @@ public class Team {
 
     @ManyToMany(mappedBy = "teamList")
     private List<Project> projectList;
+
+    public Team(String name, List<Employee> employeeList) {
+        this.name = name;
+        this.employeeList = employeeList;
+    }
 }

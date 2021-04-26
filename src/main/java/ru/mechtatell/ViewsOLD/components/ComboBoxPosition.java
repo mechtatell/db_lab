@@ -1,4 +1,4 @@
-package ru.mechtatell.Views.components;
+package ru.mechtatell.ViewsOLD.components;
 
 import ru.mechtatell.Models.Position;
 
@@ -12,6 +12,6 @@ public class ComboBoxPosition extends DefaultComboBoxModel<Position> {
 
     @Override
     public Object getSelectedItem() {
-        return super.getSelectedItem() != null ? ((Position) super.getSelectedItem()).getId() : null;
+        return super.getSelectedItem() != null ? ((Position) super.getSelectedItem()) : null;
     }
 }

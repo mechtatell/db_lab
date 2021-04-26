@@ -2,11 +2,13 @@ package ru.mechtatell.Views;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import ru.mechtatell.DAO.EmployeeDAO;
-import ru.mechtatell.DAO.TeamDAO;
+import ru.mechtatell.DAO.Interfaces.EmployeeDAO;
+import ru.mechtatell.DAO.Interfaces.TeamDAO;
 import ru.mechtatell.Models.Employee;
 import ru.mechtatell.Models.Team;
-import ru.mechtatell.Views.components.TableEmployee;
+import ru.mechtatell.Views.Util.CRUDLogic;
+import ru.mechtatell.Views.Util.Frame;
+import ru.mechtatell.ViewsOLD.components.TableEmployee;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -15,55 +17,47 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
-public class TeamFrame {
+public class TeamFrame extends Frame {
     private JFrame frame;
     private JTable table;
     private JScrollPane scrollPane;
 
-    private final EmployeeDAO employeeDAO;
     private final TeamDAO teamDAO;
+    private final EmployeeDAO employeeDAO;
 
     @Autowired
-    public TeamFrame(EmployeeDAO employeeDAO, TeamDAO teamDAO) {
-        this.employeeDAO = employeeDAO;
+    public TeamFrame(TeamDAO teamDAO, EmployeeDAO employeeDAO) {
         this.teamDAO = teamDAO;
+        this.employeeDAO = employeeDAO;
     }
 
     public void init() {
-        frame = new JFrame("Бригады");
-        frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        frame.setSize(535, 500);
-        frame.setLayout(null);
-        frame.setResizable(false);
-
+        String NAME = "Бригады";
+        frame = super.init(NAME, 535, 500);
         refreshTable();
+        super.addNavigationButtons(NAME, new CRUDLogic() {
+            @Override
+            public void create() {
+                createTeam();
+            }
 
-        JLabel labelMain = new JLabel("Бригады");
-        frame.add(labelMain);
-        labelMain.setFont(new Font("Roboto", Font.BOLD, 16));
-        labelMain.setBounds(40, 10, 100, 30);
+            @Override
+            public void update() {
+                updateTeam();
+            }
 
-        JButton buttonCreate = new JButton("Создать");
-        frame.add(buttonCreate);
-        buttonCreate.setBounds(190, 10, 100, 30);
-        buttonCreate.addActionListener(e -> create());
-
-        JButton buttomRemove = new JButton("Удалить");
-        frame.add(buttomRemove);
-        buttomRemove.setBounds(300, 10, 100, 30);
-        buttomRemove.addActionListener(e -> remove());
-
-        JButton buttonUpdate = new JButton("Изменить");
-        frame.add(buttonUpdate);
-        buttonUpdate.setBounds(410, 10, 100, 30);
-        buttonUpdate.addActionListener(e -> update());
+            @Override
+            public void remove() {
+                removeTeam();
+            }
+        });
 
         frame.repaint();
         frame.setVisible(true);
     }
 
     private void refreshTable() {
-        List<Team> teamList = teamDAO.index();
+        List<Team> teamList = teamDAO.findAll();
         Object[][] data = new String[teamList.size()][3];
 
         for (int i = 0; i < data.length; i++) {
@@ -87,22 +81,22 @@ public class TeamFrame {
         frame.repaint();
     }
 
-    private JPanel getNewTeamPanel(String name, List<Employee> employeeList, Team team) {
+    private JPanel getNewTeamPanel(Team team) {
         JPanel panelCreateTeam = new JPanel();
         JLabel labelName = new JLabel("Введите имя");
         JLabel labelEmployees = new JLabel("Выберете сотрудников");
 
         TableEmployee model = new TableEmployee();
-        for (Employee employee : employeeList) {
+        for (Employee employee : employeeDAO.findAll()) {
             boolean check = false;
-            if (team != null) {
+            if (team != null && team.getEmployeeList() != null) {
                 check = team.getEmployeeList().contains(employee);
             }
             model.addRow(new Object[]{employee.getId(), employee.getFirstName(), employee.getLastName(), employee.getPosition(), check});
         }
         JTable table = new JTable(model);
         JScrollPane scrollPane = new JScrollPane(table);
-        JTextField textFieldName = new JTextField(name, 10);
+        JTextField textFieldName = new JTextField(team.getName(), 10);
         textFieldName.setMaximumSize(new Dimension(400, 30));
         panelCreateTeam.setLayout(new BoxLayout(panelCreateTeam, BoxLayout.Y_AXIS));
         JPanel namePanel = new JPanel();
@@ -122,32 +116,14 @@ public class TeamFrame {
         return panelCreateTeam;
     }
 
-    private void create() {
-        JPanel employeePanel = getNewTeamPanel("", employeeDAO.index(), null);
-        int result = JOptionPane.showConfirmDialog(frame, employeePanel, "Создание бригады",
+    private void createTeam() {
+        JPanel teamPanel = getNewTeamPanel(new Team());
+        int result = JOptionPane.showConfirmDialog(frame, teamPanel, "Создание бригады",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         try {
             if (result == JOptionPane.OK_OPTION) {
-                JTextField nameField = (JTextField) ((JComponent) employeePanel.getComponent(0)).getComponent(1);
-                if (nameField.getText().isEmpty()) {
-                    throw new Exception("Некорректный формат имени");
-                }
-
-                List<Employee> employees = new ArrayList<>();
-                JTable table = (JTable) ((JScrollPane) ((JComponent)employeePanel.getComponent(1)).getComponent(1)).getViewport().getView();
-
-                for (int i = 0; i < table.getRowCount(); i++) {
-                    boolean check = Boolean.parseBoolean((String.valueOf(table.getModel().getValueAt(i, 4))));
-                    if (check) {
-                        int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(i, 0)));
-                        employees.add(employeeDAO.show(id));
-                    }
-                }
-
-                String name = nameField.getText();
-
-                Team team = new Team(name, employees);
+                Team team = createTeamModel(teamPanel);
                 teamDAO.save(team);
                 refreshTable();
             }
@@ -155,15 +131,16 @@ public class TeamFrame {
             int resultError = JOptionPane.showConfirmDialog(frame, ex.getMessage(), "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
             if (resultError == JOptionPane.OK_OPTION) {
-                create();
+                createTeam();
             }
         }
     }
 
-    private void remove() {
+    private void removeTeam() {
         if (table.getSelectedRowCount() != 1) {
             JOptionPane.showConfirmDialog(frame, "Строка выбрана некорректно", "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
+            return;
         }
 
         int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(table.getSelectedRow(), 0)));
@@ -179,51 +156,60 @@ public class TeamFrame {
         }
     }
 
-    private void update() {
+    private void updateTeam() {
         if (table.getSelectedRowCount() != 1) {
             JOptionPane.showConfirmDialog(frame, "Строка выбрана некорректно", "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
+            return;
         }
 
         int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(table.getSelectedRow(), 0)));
 
-        Team team = teamDAO.show(id);
+        Team team;
+        if (teamDAO.findById(id).isPresent()) {
+            team = teamDAO.findById(id).get();
+        } else {
+            return;
+        }
 
-        JPanel employeePanel = getNewTeamPanel(team.getName(), employeeDAO.index(), team);
-        int result = JOptionPane.showConfirmDialog(frame, employeePanel, "Изменение бригады",
+        JPanel teamPanel = getNewTeamPanel(team);
+        int result = JOptionPane.showConfirmDialog(frame, teamPanel, "Создание бригады",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         try {
             if (result == JOptionPane.OK_OPTION) {
-                JTextField nameField = (JTextField) ((JComponent) employeePanel.getComponent(0)).getComponent(1);
-                if (nameField.getText().isEmpty()) {
-                    throw new Exception("Некорректный формат названия");
-                }
-
-                List<Employee> employeeList = new ArrayList<>();
-                JTable table = (JTable) ((JScrollPane) ((JComponent)employeePanel.getComponent(1)).getComponent(1)).getViewport().getView();
-
-                for (int i = 0; i < table.getRowCount(); i++) {
-                    boolean check = Boolean.parseBoolean((String.valueOf(table.getModel().getValueAt(i, 4))));
-                    if (check) {
-                        int employeeId = Integer.parseInt(String.valueOf(table.getModel().getValueAt(i, 0)));
-                        employeeList.add(employeeDAO.show(employeeId));
-                    }
-                }
-
-                String name = nameField.getText();
-
-                Team updatedTeam = new Team(name, employeeList);
-                teamDAO.update(id, updatedTeam);
+                Team updatedTeam = createTeamModel(teamPanel);
+                updatedTeam.setId(id);
+                teamDAO.save(updatedTeam);
                 refreshTable();
-
             }
         } catch (Exception ex) {
             int resultError = JOptionPane.showConfirmDialog(frame, ex.getMessage(), "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
             if (resultError == JOptionPane.OK_OPTION) {
-                update();
+                createTeam();
             }
         }
+    }
+
+    private Team createTeamModel(JPanel teamPanel) throws Exception {
+        JTextField nameField = (JTextField) ((JComponent) teamPanel.getComponent(0)).getComponent(1);
+        if (nameField.getText().isEmpty()) {
+            throw new Exception("Некорректный формат имени");
+        }
+
+        List<Employee> employees = new ArrayList<>();
+        JTable table = (JTable) ((JScrollPane) ((JComponent) teamPanel.getComponent(1)).getComponent(1)).getViewport().getView();
+
+        for (int i = 0; i < table.getRowCount(); i++) {
+            boolean check = Boolean.parseBoolean((String.valueOf(table.getModel().getValueAt(i, 4))));
+            if (check) {
+                int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(i, 0)));
+                employees.add(employeeDAO.findById(id).orElse(null));
+            }
+        }
+
+        String name = nameField.getText();
+        return new Team(name, employees);
     }
 }

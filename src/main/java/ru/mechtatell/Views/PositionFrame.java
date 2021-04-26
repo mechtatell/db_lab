@@ -2,15 +2,17 @@ package ru.mechtatell.Views;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import ru.mechtatell.DAO.PositionDAO;
+import ru.mechtatell.DAO.Interfaces.PositionDAO;
 import ru.mechtatell.Models.Position;
+import ru.mechtatell.Views.Util.CRUDLogic;
+import ru.mechtatell.Views.Util.Frame;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 
 @Component
-public class PositionFrame {
+public class PositionFrame extends Frame {
     private JFrame frame;
     private JTable table;
     private JScrollPane scrollPane;
@@ -23,40 +25,32 @@ public class PositionFrame {
     }
 
     public void init() {
-        frame = new JFrame("Должности");
-        frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        frame.setSize(535, 500);
-        frame.setLayout(null);
-        frame.setResizable(false);
-
+        String NAME = "Должности";
+        frame = super.init(NAME, 535, 500);
         refreshTable();
+        super.addNavigationButtons(NAME, new CRUDLogic() {
+            @Override
+            public void create() {
+                createPosition();
+            }
 
-        JLabel labelMain = new JLabel("Должности");
-        frame.add(labelMain);
-        labelMain.setFont(new Font("Roboto", Font.BOLD, 16));
-        labelMain.setBounds(40, 10, 100, 30);
+            @Override
+            public void update() {
+                updatePosition();
+            }
 
-        JButton buttonCreate = new JButton("Создать");
-        frame.add(buttonCreate);
-        buttonCreate.setBounds(190, 10, 100, 30);
-        buttonCreate.addActionListener(e -> create());
-
-        JButton buttomRemove = new JButton("Удалить");
-        frame.add(buttomRemove);
-        buttomRemove.setBounds(300, 10, 100, 30);
-        buttomRemove.addActionListener(e -> remove());
-
-        JButton buttonUpdate = new JButton("Изменить");
-        frame.add(buttonUpdate);
-        buttonUpdate.setBounds(410, 10, 100, 30);
-        buttonUpdate.addActionListener(e -> update());
+            @Override
+            public void remove() {
+                removePosition();
+            }
+        });
 
         frame.repaint();
         frame.setVisible(true);
     }
 
     private void refreshTable() {
-        java.util.List<Position> positionList = positionDAO.index();
+        java.util.List<Position> positionList = positionDAO.findAll();
         Object[][] data = new String[positionList.size()][3];
 
         for (int i = 0; i < data.length; i++) {
@@ -80,13 +74,15 @@ public class PositionFrame {
         frame.repaint();
     }
 
-    private JPanel getPositionPanel(String name, String payment) {
+    private JPanel getNewPositionPanel(Position position) {
         JPanel panelPosition = new JPanel();
         JLabel labelName = new JLabel("Введите название");
         JLabel labelPayment = new JLabel("Введите оплату");
 
-        JTextField textFieldName = new JTextField(name, 10);
-        JTextField textFieldPayment = new JTextField(payment, 10);
+        JTextField textFieldName = new JTextField(position != null ?
+                position.getName() : "", 10);
+        JTextField textFieldPayment = new JTextField(position != null ?
+                String.valueOf(position.getPayment()) : "", 10);
 
         panelPosition.setLayout(new GridLayout(6, 1));
         panelPosition.add(labelName);
@@ -98,27 +94,14 @@ public class PositionFrame {
         return panelPosition;
     }
 
-    private void create() {
-        JPanel positionPanel = getPositionPanel("", "");
+    private void createPosition() {
+        JPanel positionPanel = getNewPositionPanel(new Position());
         int result = JOptionPane.showConfirmDialog(frame, positionPanel, "Создание должности",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         try {
             if (result == JOptionPane.OK_OPTION) {
-                JTextField nameField = (JTextField) positionPanel.getComponent(1);
-                if (nameField.getText().isEmpty()) {
-                    throw new Exception("Некорректный формат названия");
-                }
-
-                JTextField paymentField = (JTextField) positionPanel.getComponent(4);
-                if (paymentField.getText().isEmpty()) {
-                    throw new Exception("Некорректный формат оплаты");
-                }
-
-                String name = nameField.getText();
-                double payment = Double.parseDouble(paymentField.getText());
-
-                Position position = new Position(name, payment);
+                Position position = createPositionModel(positionPanel);
                 positionDAO.save(position);
                 refreshTable();
             }
@@ -126,15 +109,16 @@ public class PositionFrame {
             int resultError = JOptionPane.showConfirmDialog(frame, ex.getMessage(), "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
             if (resultError == JOptionPane.OK_OPTION) {
-                create();
+                createPosition();
             }
         }
     }
 
-    private void remove() {
+    private void removePosition() {
         if (table.getSelectedRowCount() != 1) {
             JOptionPane.showConfirmDialog(frame, "Строка выбрана некорректно", "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
+            return;
         }
 
         int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(table.getSelectedRow(), 0)));
@@ -150,7 +134,7 @@ public class PositionFrame {
         }
     }
 
-    private void update() {
+    private void updatePosition() {
         if (table.getSelectedRowCount() != 1) {
             JOptionPane.showConfirmDialog(frame, "Строка выбрана некорректно", "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
@@ -158,38 +142,42 @@ public class PositionFrame {
         }
 
         int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(table.getSelectedRow(), 0)));
+        Position position = positionDAO.findById(id).orElse(null);
 
-        Position position = positionDAO.show(id);
-
-        JPanel positionPanel = getPositionPanel(position.getName(), String.valueOf(position.getPayment()));
+        JPanel positionPanel = getNewPositionPanel(position);
         int result = JOptionPane.showConfirmDialog(frame, positionPanel, "Создание должности",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         try {
             if (result == JOptionPane.OK_OPTION) {
-                JTextField nameField = (JTextField) positionPanel.getComponent(1);
-                if (nameField.getText().isEmpty()) {
-                    throw new Exception("Некорректный формат названия");
-                }
-
-                JTextField paymentField = (JTextField) positionPanel.getComponent(4);
-                if (paymentField.getText().isEmpty()) {
-                    throw new Exception("Некорректный формат оплаты");
-                }
-
-                String name = nameField.getText();
-                double payment = Double.parseDouble(paymentField.getText());
-
-                Position updatedPosition = new Position(name, payment);
-                positionDAO.update(id, updatedPosition);
+                Position updatedPosition = createPositionModel(positionPanel);
+                updatedPosition.setId(id);
+                positionDAO.save(updatedPosition);
                 refreshTable();
             }
         } catch (Exception ex) {
             int resultError = JOptionPane.showConfirmDialog(frame, ex.getMessage(), "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
             if (resultError == JOptionPane.OK_OPTION) {
-                create();
+                createPosition();
             }
         }
+    }
+
+    private Position createPositionModel(JPanel positionPanel) throws Exception {
+        JTextField nameField = (JTextField) positionPanel.getComponent(1);
+        if (nameField.getText().isEmpty()) {
+            throw new Exception("Некорректный формат названия");
+        }
+
+        JTextField paymentField = (JTextField) positionPanel.getComponent(4);
+        if (paymentField.getText().isEmpty()) {
+            throw new Exception("Некорректный формат оплаты");
+        }
+
+        String name = nameField.getText();
+        double payment = Double.parseDouble(paymentField.getText());
+
+        return new Position(name, payment);
     }
 }

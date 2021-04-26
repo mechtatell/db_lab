@@ -2,21 +2,23 @@ package ru.mechtatell.Views;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import ru.mechtatell.DAO.MaterialDAO;
-import ru.mechtatell.DAO.PlanDAO;
+import ru.mechtatell.DAO.Interfaces.MaterialDAO;
+import ru.mechtatell.DAO.Interfaces.PlanDAO;
 import ru.mechtatell.Models.Material;
+import ru.mechtatell.Models.MaterialPlan;
 import ru.mechtatell.Models.Plan;
-import ru.mechtatell.Views.components.TableMaterial;
+import ru.mechtatell.Views.Util.CRUDLogic;
+import ru.mechtatell.Views.Util.Frame;
+import ru.mechtatell.ViewsOLD.components.TableMaterial;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @Component
-public class PlanFrame {
+public class PlanFrame extends Frame {
     private JFrame frame;
     private JTable table;
     private JScrollPane scrollPane;
@@ -31,47 +33,39 @@ public class PlanFrame {
     }
 
     public void init() {
-        frame = new JFrame("Планы");
-        frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        frame.setSize(535, 500);
-        frame.setLayout(null);
-        frame.setResizable(false);
-
+        String NAME = "Планы";
+        frame = super.init(NAME, 535, 500);
         refreshTable();
+        super.addNavigationButtons(NAME, new CRUDLogic() {
+            @Override
+            public void create() {
+                createPlan();
+            }
 
-        JLabel labelMain = new JLabel("Планы");
-        frame.add(labelMain);
-        labelMain.setFont(new Font("Roboto", Font.BOLD, 16));
-        labelMain.setBounds(40, 10, 100, 30);
+            @Override
+            public void update() {
+                updatePlan();
+            }
 
-        JButton buttonCreate = new JButton("Создать");
-        frame.add(buttonCreate);
-        buttonCreate.setBounds(190, 10, 100, 30);
-        buttonCreate.addActionListener(e -> create());
-
-        JButton buttomRemove = new JButton("Удалить");
-        frame.add(buttomRemove);
-        buttomRemove.setBounds(300, 10, 100, 30);
-        buttomRemove.addActionListener(e -> remove());
-
-        JButton buttonUpdate = new JButton("Изменить");
-        frame.add(buttonUpdate);
-        buttonUpdate.setBounds(410, 10, 100, 30);
-        buttonUpdate.addActionListener(e -> update());
+            @Override
+            public void remove() {
+                removePlan();
+            }
+        });
 
         frame.repaint();
         frame.setVisible(true);
     }
 
     private void refreshTable() {
-        List<Plan> plans = planDAO.index();
+        List<Plan> plans = planDAO.findAll();
         Object[][] data = new String[plans.size()][4];
 
         for (int i = 0; i < data.length; i++) {
             data[i][0] = String.valueOf(plans.get(i).getId());
             data[i][1] = plans.get(i).getConstructionType();
             data[i][2] = String.valueOf(plans.get(i).getFloorsCount());
-            data[i][3] = String.valueOf(plans.get(i).getMaterialList().size());
+            data[i][3] = String.valueOf(plans.get(i).getMaterialPlanList().size());
         }
 
         String[] header = {"id", "Тип конструкции", "Количество этажей", "Количество материалов"};
@@ -96,13 +90,15 @@ public class PlanFrame {
         JLabel labelMaterials = new JLabel("Выберете материалы");
 
         TableMaterial model = new TableMaterial();
-        for (Material material : materialDAO.index()) {
+        for (Material material : materialDAO.findAll()) {
             boolean check = false;
             int count = 0;
-            if (plan != null) {
-                check = plan.getMaterialList().containsKey(material);
+            if (plan != null && plan.getMaterialPlanList() != null) {
+                check = plan.getMaterialPlanList().stream().anyMatch(e -> e.getMaterial().getId() == material.getId());
                 if (check) {
-                    count = plan.getMaterialList().get(material);
+                    count = plan.getMaterialPlanList()
+                            .stream().filter(e -> e.getMaterial().getId() == material.getId())
+                            .findAny().get().getCount();
                 }
             }
             model.addRow(new Object[]{material.getId(), material.getName(), material.getPrice(), count, check});
@@ -138,55 +134,32 @@ public class PlanFrame {
         return panelCreateTeam;
     }
 
-    private void create() {
-        JPanel planPanel = getNewPlanPanel(null);
+    private void createPlan() {
+        JPanel planPanel = getNewPlanPanel(new Plan());
         int result = JOptionPane.showConfirmDialog(frame, planPanel, "Создание плана",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         try {
             if (result == JOptionPane.OK_OPTION) {
-                JTextField typeField = (JTextField) ((JComponent) planPanel.getComponent(0)).getComponent(1);
-                if (typeField.getText().isEmpty()) {
-                    throw new Exception("Некорректный формат типа конструкции");
-                }
-
-                JTextField floorsField = (JTextField) ((JComponent) planPanel.getComponent(0)).getComponent(4);
-                if (floorsField.getText().isEmpty()) {
-                    throw new Exception("Некорректный формат количества этажей");
-                }
-
-                Map<Material, Integer> materials = new HashMap<>();
-                JTable table = (JTable) ((JScrollPane) ((JComponent)planPanel.getComponent(1)).getComponent(1)).getViewport().getView();
-
-                for (int i = 0; i < table.getRowCount(); i++) {
-                    boolean check = Boolean.parseBoolean((String.valueOf(table.getModel().getValueAt(i, 4))));
-                    if (check) {
-                        int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(i, 0)));
-                        int count = Integer.parseInt(String.valueOf(table.getModel().getValueAt(i, 3)));
-                        materials.put(materialDAO.show(id), count);
-                    }
-                }
-
-                String type = typeField.getText();
-                int floorsCount = Integer.parseInt(floorsField.getText());
-
-                Plan plan = new Plan(type, floorsCount, materials);
+                Plan plan = createPlanModel(planPanel);
                 planDAO.save(plan);
+                addMaterialPlanList(plan, planPanel);
                 refreshTable();
             }
         } catch (Exception ex) {
             int resultError = JOptionPane.showConfirmDialog(frame, ex.getMessage(), "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
             if (resultError == JOptionPane.OK_OPTION) {
-                create();
+                createPlan();
             }
         }
     }
 
-    private void remove() {
+    private void removePlan() {
         if (table.getSelectedRowCount() != 1) {
             JOptionPane.showConfirmDialog(frame, "Строка выбрана некорректно", "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
+            return;
         }
 
         int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(table.getSelectedRow(), 0)));
@@ -202,7 +175,7 @@ public class PlanFrame {
         }
     }
 
-    private void update() {
+    private void updatePlan() {
         if (table.getSelectedRowCount() != 1) {
             JOptionPane.showConfirmDialog(frame, "Строка выбрана некорректно", "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
@@ -211,49 +184,65 @@ public class PlanFrame {
 
         int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(table.getSelectedRow(), 0)));
 
-        Plan plan = planDAO.show(id);
+        Plan plan;
+        if (planDAO.findById(id).isPresent()) {
+            plan = planDAO.findById(id).get();
+        } else {
+            return;
+        }
 
         JPanel planPanel = getNewPlanPanel(plan);
-        int result = JOptionPane.showConfirmDialog(frame, planPanel, "Изменение плана",
+        int result = JOptionPane.showConfirmDialog(frame, planPanel, "Создание бригады",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         try {
             if (result == JOptionPane.OK_OPTION) {
-                JTextField typeField = (JTextField) ((JComponent) planPanel.getComponent(0)).getComponent(1);
-                if (typeField.getText().isEmpty()) {
-                    throw new Exception("Некорректный формат типа конструкции");
-                }
-
-                JTextField floorsField = (JTextField) ((JComponent) planPanel.getComponent(0)).getComponent(4);
-                if (floorsField.getText().isEmpty()) {
-                    throw new Exception("Некорректный формат количества этажей");
-                }
-
-                Map<Material, Integer> materials = new HashMap<>();
-                JTable table = (JTable) ((JScrollPane) ((JComponent)planPanel.getComponent(1)).getComponent(1)).getViewport().getView();
-
-                for (int i = 0; i < table.getRowCount(); i++) {
-                    boolean check = Boolean.parseBoolean((String.valueOf(table.getModel().getValueAt(i, 4))));
-                    if (check) {
-                        int materialId = Integer.parseInt(String.valueOf(table.getModel().getValueAt(i, 0)));
-                        int count = Integer.parseInt(String.valueOf(table.getModel().getValueAt(i, 3)));
-                        materials.put(materialDAO.show(materialId), count);
-                    }
-                }
-
-                String type = typeField.getText();
-                int floorsCount = Integer.parseInt(floorsField.getText());
-
-                Plan updatedPlan = new Plan(type, floorsCount, materials);
-                planDAO.update(id, updatedPlan);
+                Plan updatedPlan = createPlanModel(planPanel);
+                updatedPlan.setId(id);
+                planDAO.save(updatedPlan);
+                addMaterialPlanList(updatedPlan, planPanel);
                 refreshTable();
             }
         } catch (Exception ex) {
             int resultError = JOptionPane.showConfirmDialog(frame, ex.getMessage(), "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
             if (resultError == JOptionPane.OK_OPTION) {
-                create();
+                updatePlan();
             }
         }
+    }
+
+    private Plan createPlanModel(JPanel planPanel) throws Exception {
+        JTextField typeField = (JTextField) ((JComponent) planPanel.getComponent(0)).getComponent(1);
+        if (typeField.getText().isEmpty()) {
+            throw new Exception("Некорректный формат типа конструкции");
+        }
+
+        JTextField floorsField = (JTextField) ((JComponent) planPanel.getComponent(0)).getComponent(4);
+        if (floorsField.getText().isEmpty()) {
+            throw new Exception("Некорректный формат количества этажей");
+        }
+
+        String type = typeField.getText();
+        int floorsCount = Integer.parseInt(floorsField.getText());
+
+        return new Plan(type, floorsCount);
+    }
+
+    private void addMaterialPlanList(Plan plan, JPanel planPanel) {
+        List<MaterialPlan> materialPlanList = new ArrayList<>();
+        JTable table = (JTable) ((JScrollPane) ((JComponent)planPanel.getComponent(1)).getComponent(1)).getViewport().getView();
+
+        for (int i = 0; i < table.getRowCount(); i++) {
+            boolean check = Boolean.parseBoolean((String.valueOf(table.getModel().getValueAt(i, 4))));
+            if (check) {
+                int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(i, 0)));
+                int count = Integer.parseInt(String.valueOf(table.getModel().getValueAt(i, 3)));
+                materialPlanList.add(new MaterialPlan(materialDAO.findById(id).get(), plan, count));
+            }
+        }
+
+        plan.setMaterialPlanList(materialPlanList);
+        planDAO.save(plan);
     }
 }

@@ -1,12 +1,11 @@
-package ru.mechtatell.Views.components;
-
+package ru.mechtatell.ViewsOLD.components;
 import javax.swing.table.DefaultTableModel;
 import java.util.Vector;
 
-public class TableEmployee extends DefaultTableModel {
+public class TableMaterial extends DefaultTableModel {
 
-    public TableEmployee() {
-        super(new String[]{"Id", "Имя", "Фамилия", "Должность", "Выбран?"}, 0);
+    public TableMaterial() {
+        super(new String[]{"Id", "Название", "Стоимось","Количество", "Выбран?"}, 0);
     }
 
     @Override
@@ -25,15 +24,18 @@ public class TableEmployee extends DefaultTableModel {
 
     @Override
     public boolean isCellEditable(int row, int column) {
-        return column == 4;
+        return column == 4 || column == 3;
     }
 
     @Override
     public void setValueAt(Object aValue, int row, int column) {
         if (aValue instanceof Boolean && column == 4) {
-            System.out.println(aValue);
             Vector rowData = (Vector) getDataVector().get(row);
-            rowData.set(4, (boolean) aValue);
+            rowData.set(4, aValue);
+            fireTableCellUpdated(row, column);
+        } else if (column == 3) {
+            Vector rowData = (Vector) getDataVector().get(row);
+            rowData.set(3, aValue);
             fireTableCellUpdated(row, column);
         }
     }

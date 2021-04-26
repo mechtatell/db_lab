@@ -2,19 +2,22 @@ package ru.mechtatell.Views;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import ru.mechtatell.DAO.EmployeeDAO;
-import ru.mechtatell.DAO.PositionDAO;
+import ru.mechtatell.DAO.Interfaces.EmployeeDAO;
+import ru.mechtatell.DAO.Interfaces.PositionDAO;
 import ru.mechtatell.Models.Employee;
 import ru.mechtatell.Models.Position;
-import ru.mechtatell.Views.components.ComboBoxPosition;
+import ru.mechtatell.Views.Util.CRUDLogic;
+import ru.mechtatell.Views.Util.Frame;
+import ru.mechtatell.ViewsOLD.components.ComboBoxPosition;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
+import java.util.Arrays;
 import java.util.List;
 
 @Component
-public class EmployeeFrame {
+public class EmployeeFrame extends Frame {
     private JFrame frame;
     private JTable table;
     private JScrollPane scrollPane;
@@ -29,40 +32,32 @@ public class EmployeeFrame {
     }
 
     public void init() {
-        frame = new JFrame("Работники");
-        frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        frame.setSize(535, 500);
-        frame.setLayout(null);
-        frame.setResizable(false);
-
+        String NAME = "Работники";
+        frame = super.init(NAME, 535, 500);
         refreshTable();
+        super.addNavigationButtons(NAME, new CRUDLogic() {
+            @Override
+            public void create() {
+                createEmployee();
+            }
 
-        JLabel labelMain = new JLabel("Работники");
-        frame.add(labelMain);
-        labelMain.setFont(new Font("Roboto", Font.BOLD, 16));
-        labelMain.setBounds(40, 10, 100, 30);
+            @Override
+            public void update() {
+                updateEmployee();
+            }
 
-        JButton buttonCreate = new JButton("Создать");
-        frame.add(buttonCreate);
-        buttonCreate.setBounds(190, 10, 100, 30);
-        buttonCreate.addActionListener(e -> create());
-
-        JButton buttomRemove = new JButton("Удалить");
-        frame.add(buttomRemove);
-        buttomRemove.setBounds(300, 10, 100, 30);
-        buttomRemove.addActionListener(e -> remove());
-
-        JButton buttonUpdate = new JButton("Изменить");
-        frame.add(buttonUpdate);
-        buttonUpdate.setBounds(410, 10, 100, 30);
-        buttonUpdate.addActionListener(e -> update());
+            @Override
+            public void remove() {
+                removeEmployee();
+            }
+        });
 
         frame.repaint();
         frame.setVisible(true);
     }
 
     private void refreshTable() {
-        List<Employee> employeeList = employeeDAO.index();
+        List<Employee> employeeList = employeeDAO.findAll();
         Object[][] data = new String[employeeList.size()][4];
 
         for (int i = 0; i < data.length; i++) {
@@ -96,10 +91,18 @@ public class EmployeeFrame {
         JTextField textFieldFirstName = new JTextField(employee != null ? employee.getFirstName() : "", 10);
         JTextField textFieldLastName = new JTextField(employee != null ? employee.getLastName() : "", 10);
 
-        Position[] positions = positionDAO.index().toArray(new Position[0]);
+        Position[] positions = positionDAO.findAll().toArray(new Position[0]);
         ComboBoxPosition comboBoxPositionModel = new ComboBoxPosition(positions);
         JComboBox<Position> comboBoxPosition = new JComboBox<>(comboBoxPositionModel);
-        comboBoxPosition.setSelectedIndex(employee != null ? comboBoxPositionModel.getIndexOf(employee.getPosition()) : -1);
+
+        if (employee != null && employee.getPosition() != null) {
+            Position position = Arrays.stream(positions)
+                    .filter(e -> e.getId() == employee.getPosition().getId())
+                    .findAny().orElse(null);
+
+            int index = comboBoxPositionModel.getIndexOf(position);
+            comboBoxPosition.setSelectedIndex(index);
+        }
 
         panelCreateEmployee.setLayout(new GridLayout(9, 1));
         panelCreateEmployee.add(labelFirstName);
@@ -115,33 +118,14 @@ public class EmployeeFrame {
         return panelCreateEmployee;
     }
 
-    private void create() {
-        JPanel employeePanel = getNewEmployeePanel(null);
-        int result = JOptionPane.showConfirmDialog(frame, employeePanel, "Создание сотрудника",
+    private void createEmployee() {
+        JPanel employeePanel = getNewEmployeePanel(new Employee());
+        int result = JOptionPane.showConfirmDialog(frame, employeePanel, "Создание работника",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         try {
             if (result == JOptionPane.OK_OPTION) {
-                JTextField firstNameField = (JTextField) employeePanel.getComponent(1);
-                if (firstNameField.getText().isEmpty()) {
-                    throw new Exception("Некорректный формат ФИО");
-                }
-
-                JTextField lastNameField = (JTextField) employeePanel.getComponent(4);
-                if (lastNameField.getText().isEmpty()) {
-                    throw new Exception("Некорректный формат ФИО");
-                }
-
-                JComboBox<String> comboBoxPosition = (JComboBox<String>) employeePanel.getComponent(7);
-                if (comboBoxPosition.getSelectedItem() == null) {
-                    throw new Exception("Не выбрана должность");
-                }
-
-                String firstName = firstNameField.getText();
-                String lastName = lastNameField.getText();
-                int positionId = (int) comboBoxPosition.getSelectedItem();
-
-                Employee employee = new Employee(firstName, lastName, positionDAO.show(positionId));
+                Employee employee = createEmployeeModel(employeePanel);
                 employeeDAO.save(employee);
                 refreshTable();
             }
@@ -149,15 +133,16 @@ public class EmployeeFrame {
             int resultError = JOptionPane.showConfirmDialog(frame, ex.getMessage(), "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
             if (resultError == JOptionPane.OK_OPTION) {
-                create();
+                createEmployee();
             }
         }
     }
 
-    private void remove() {
+    private void removeEmployee() {
         if (table.getSelectedRowCount() != 1) {
             JOptionPane.showConfirmDialog(frame, "Строка выбрана некорректно", "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
+            return;
         }
 
         int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(table.getSelectedRow(), 0)));
@@ -173,51 +158,62 @@ public class EmployeeFrame {
         }
     }
 
-    private void update() {
+    private void updateEmployee() {
         if (table.getSelectedRowCount() != 1) {
             JOptionPane.showConfirmDialog(frame, "Строка выбрана некорректно", "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
+            return;
         }
 
         int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(table.getSelectedRow(), 0)));
 
-        Employee employee = employeeDAO.show(id);
+        Employee employee;
+        if (employeeDAO.findById(id).isPresent()) {
+            employee = employeeDAO.findById(id).get();
+        } else {
+            return;
+        }
 
         JPanel employeePanel = getNewEmployeePanel(employee);
-        int result = JOptionPane.showConfirmDialog(frame, employeePanel, "Изменение сотрудника",
+        int result = JOptionPane.showConfirmDialog(frame, employeePanel, "Создание работника",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         try {
             if (result == JOptionPane.OK_OPTION) {
-                JTextField firstNameField = (JTextField) employeePanel.getComponent(1);
-                if (firstNameField.getText().isEmpty()) {
-                    throw new Exception("Некорректный формат ФИО");
-                }
-
-                JTextField lastNameField = (JTextField) employeePanel.getComponent(4);
-                if (lastNameField.getText().isEmpty()) {
-                    throw new Exception("Некорректный формат ФИО");
-                }
-
-                JComboBox<String> comboBoxPosition = (JComboBox<String>) employeePanel.getComponent(7);
-                if (comboBoxPosition.getSelectedItem() == null) {
-                    throw new Exception("Не выбрана должность");
-                }
-
-                String firstName = firstNameField.getText();
-                String lastName = lastNameField.getText();
-                int positionId = (int) comboBoxPosition.getSelectedItem();
-
-                Employee updatedEmployee = new Employee(firstName, lastName, positionDAO.show(positionId));
-                employeeDAO.update(id, updatedEmployee);
+                Employee updatedEmployee = createEmployeeModel(employeePanel);
+                updatedEmployee.setId(id);
+                employeeDAO.save(updatedEmployee);
                 refreshTable();
             }
         } catch (Exception ex) {
             int resultError = JOptionPane.showConfirmDialog(frame, ex.getMessage(), "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
             if (resultError == JOptionPane.OK_OPTION) {
-                update();
+                createEmployee();
             }
         }
+    }
+
+    private Employee createEmployeeModel(JPanel employeePanel) throws Exception {
+        JTextField firstNameField = (JTextField) employeePanel.getComponent(1);
+        if (firstNameField.getText().isEmpty()) {
+            throw new Exception("Некорректный формат ФИО");
+        }
+
+        JTextField lastNameField = (JTextField) employeePanel.getComponent(4);
+        if (lastNameField.getText().isEmpty()) {
+            throw new Exception("Некорректный формат ФИО");
+        }
+
+        JComboBox<String> comboBoxPosition = (JComboBox<String>) employeePanel.getComponent(7);
+        if (comboBoxPosition.getSelectedItem() == null) {
+            throw new Exception("Не выбрана должность");
+        }
+
+        String firstName = firstNameField.getText();
+        String lastName = lastNameField.getText();
+        int positionId = ((Position) comboBoxPosition.getSelectedItem()).getId();
+
+        return new Employee(firstName, lastName, positionDAO.findById(positionId).orElse(null));
     }
 }

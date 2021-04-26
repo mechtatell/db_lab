@@ -2,15 +2,17 @@ package ru.mechtatell.Views;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import ru.mechtatell.DAO.MaterialDAO;
+import ru.mechtatell.DAO.Interfaces.MaterialDAO;
 import ru.mechtatell.Models.Material;
+import ru.mechtatell.Views.Util.CRUDLogic;
+import ru.mechtatell.Views.Util.Frame;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 
 @Component
-public class MaterialFrame {
+public class MaterialFrame extends Frame {
     private JFrame frame;
     private JTable table;
     private JScrollPane scrollPane;
@@ -18,45 +20,37 @@ public class MaterialFrame {
     private final MaterialDAO materialDAO;
 
     @Autowired
-    public MaterialFrame(MaterialDAO MaterialDAO) {
-        this.materialDAO = MaterialDAO;
+    public MaterialFrame(MaterialDAO materialDAO) {
+        this.materialDAO = materialDAO;
     }
 
     public void init() {
-        frame = new JFrame("Материалы");
-        frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        frame.setSize(535, 500);
-        frame.setLayout(null);
-        frame.setResizable(false);
-
+        String NAME = "Материалы";
+        frame = super.init(NAME, 535, 500);
         refreshTable();
+        super.addNavigationButtons(NAME, new CRUDLogic() {
+            @Override
+            public void create() {
+                createMaterial();
+            }
 
-        JLabel labelMain = new JLabel("Материалы");
-        frame.add(labelMain);
-        labelMain.setFont(new Font("Roboto", Font.BOLD, 16));
-        labelMain.setBounds(40, 10, 100, 30);
+            @Override
+            public void update() {
+                updateMaterial();
+            }
 
-        JButton buttonCreate = new JButton("Создать");
-        frame.add(buttonCreate);
-        buttonCreate.setBounds(190, 10, 100, 30);
-        buttonCreate.addActionListener(e -> create());
-
-        JButton buttomRemove = new JButton("Удалить");
-        frame.add(buttomRemove);
-        buttomRemove.setBounds(300, 10, 100, 30);
-        buttomRemove.addActionListener(e -> remove());
-
-        JButton buttonUpdate = new JButton("Изменить");
-        frame.add(buttonUpdate);
-        buttonUpdate.setBounds(410, 10, 100, 30);
-        buttonUpdate.addActionListener(e -> update());
+            @Override
+            public void remove() {
+                removeMaterial();
+            }
+        });
 
         frame.repaint();
         frame.setVisible(true);
     }
 
     private void refreshTable() {
-        java.util.List<Material> materialList = materialDAO.index();
+        java.util.List<Material> materialList = materialDAO.findAll();
         Object[][] data = new String[materialList.size()][3];
 
         for (int i = 0; i < data.length; i++) {
@@ -80,13 +74,13 @@ public class MaterialFrame {
         frame.repaint();
     }
 
-    private JPanel getMaterialPanel(String name, String price) {
+    private JPanel getNewMaterialPanel(Material material) {
         JPanel panelMaterial = new JPanel();
         JLabel labelName = new JLabel("Введите название");
         JLabel labelPrice = new JLabel("Введите стоимость");
 
-        JTextField textFieldName = new JTextField(name, 10);
-        JTextField textFieldPrice = new JTextField(price, 10);
+        JTextField textFieldName = new JTextField(material != null ? material.getName() : "", 10);
+        JTextField textFieldPrice = new JTextField(material != null ? String.valueOf(material.getPrice()) : "", 10);
 
         panelMaterial.setLayout(new GridLayout(6, 1));
         panelMaterial.add(labelName);
@@ -98,43 +92,31 @@ public class MaterialFrame {
         return panelMaterial;
     }
 
-    private void create() {
-        JPanel materialPanel = getMaterialPanel("", "");
+    private void createMaterial() {
+        JPanel materialPanel = getNewMaterialPanel(new Material());
         int result = JOptionPane.showConfirmDialog(frame, materialPanel, "Создание материала",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         try {
             if (result == JOptionPane.OK_OPTION) {
-                JTextField nameField = (JTextField) materialPanel.getComponent(1);
-                if (nameField.getText().isEmpty()) {
-                    throw new Exception("Некорректный формат названия");
-                }
-
-                JTextField priceField = (JTextField) materialPanel.getComponent(4);
-                if (priceField.getText().isEmpty()) {
-                    throw new Exception("Некорректный формат стоимости");
-                }
-
-                String name = nameField.getText();
-                double price = Double.parseDouble(priceField.getText());
-
-                Material material = new Material(name, price);
-                materialDAO.save(material);
+                Material Material = createMaterialModel(materialPanel);
+                materialDAO.save(Material);
                 refreshTable();
             }
         } catch (Exception ex) {
             int resultError = JOptionPane.showConfirmDialog(frame, ex.getMessage(), "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
             if (resultError == JOptionPane.OK_OPTION) {
-                create();
+                createMaterial();
             }
         }
     }
 
-    private void remove() {
+    private void removeMaterial() {
         if (table.getSelectedRowCount() != 1) {
             JOptionPane.showConfirmDialog(frame, "Строка выбрана некорректно", "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
+            return;
         }
 
         int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(table.getSelectedRow(), 0)));
@@ -150,45 +132,50 @@ public class MaterialFrame {
         }
     }
 
-    private void update() {
+    private void updateMaterial() {
         if (table.getSelectedRowCount() != 1) {
             JOptionPane.showConfirmDialog(frame, "Строка выбрана некорректно", "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
+            return;
         }
 
         int id = Integer.parseInt(String.valueOf(table.getModel().getValueAt(table.getSelectedRow(), 0)));
+        Material material = materialDAO.findById(id).orElse(null);
 
-        Material material = materialDAO.show(id);
-
-        JPanel MaterialPanel = getMaterialPanel(material.getName(), String.valueOf(material.getPrice()));
-        int result = JOptionPane.showConfirmDialog(frame, MaterialPanel, "Редактирование материала",
+        JPanel materialPanel = getNewMaterialPanel(material);
+        int result = JOptionPane.showConfirmDialog(frame, materialPanel, "Создание материала",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         try {
             if (result == JOptionPane.OK_OPTION) {
-                JTextField nameField = (JTextField) MaterialPanel.getComponent(1);
-                if (nameField.getText().isEmpty()) {
-                    throw new Exception("Некорректный формат названия");
-                }
-
-                JTextField priceField = (JTextField) MaterialPanel.getComponent(4);
-                if (priceField.getText().isEmpty()) {
-                    throw new Exception("Некорректный формат стоимости");
-                }
-
-                String name = nameField.getText();
-                double price = Double.parseDouble(priceField.getText());
-
-                Material updatedMaterial = new Material(name, price);
-                materialDAO.update(id, updatedMaterial);
+                Material updatedMaterial = createMaterialModel(materialPanel);
+                updatedMaterial.setId(id);
+                materialDAO.save(updatedMaterial);
                 refreshTable();
             }
         } catch (Exception ex) {
             int resultError = JOptionPane.showConfirmDialog(frame, ex.getMessage(), "Ошибка",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
             if (resultError == JOptionPane.OK_OPTION) {
-                create();
+                createMaterial();
             }
         }
+    }
+
+    private Material createMaterialModel(JPanel materialPanel) throws Exception {
+        JTextField nameField = (JTextField) materialPanel.getComponent(1);
+        if (nameField.getText().isEmpty()) {
+            throw new Exception("Некорректный формат названия");
+        }
+
+        JTextField priceField = (JTextField) materialPanel.getComponent(4);
+        if (priceField.getText().isEmpty()) {
+            throw new Exception("Некорректный формат стоимости");
+        }
+
+        String name = nameField.getText();
+        double price = Double.parseDouble(priceField.getText());
+
+        return new Material(name, price);
     }
 }

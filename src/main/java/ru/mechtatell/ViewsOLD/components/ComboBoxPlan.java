@@ -1,4 +1,4 @@
-package ru.mechtatell.Views.components;
+package ru.mechtatell.ViewsOLD.components;
 
 import ru.mechtatell.Models.Plan;
 
