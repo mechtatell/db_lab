@@ -5,6 +5,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.data.redis.repository.configuration.EnableRedisRepositories;
 import ru.mechtatell.TransferToMongo.DbTransfer;
 import ru.mechtatell.Views.MainFrame;
 
