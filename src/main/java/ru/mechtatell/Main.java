@@ -12,12 +12,10 @@ import ru.mechtatell.Views.MainFrame;
 public class Main implements CommandLineRunner {
 
     private final MainFrame mainFrame;
-    private final DbTransfer dbTransfer;
 
     @Autowired
-    public Main(MainFrame mainFrame, DbTransfer dbTransfer) {
+    public Main(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
-        this.dbTransfer = dbTransfer;
     }
 
     public static void main(String[] args) {
@@ -29,7 +27,6 @@ public class Main implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        dbTransfer.transfer();
         mainFrame.init();
     }
 }

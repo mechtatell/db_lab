@@ -2,6 +2,7 @@ package ru.mechtatell.Views;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import ru.mechtatell.TransferToMongo.DbTransfer;
 import ru.mechtatell.Views.Util.Frame;
 
 import javax.swing.*;
@@ -17,9 +18,10 @@ public class MainFrame extends Frame {
     private final PlanFrame planFrame;
     private final ProjectFrame projectFrame;
     private final QueryFrame queryFrame;
+    private final DbTransfer dbTransfer;
 
     @Autowired
-    public MainFrame(PositionFrame positionFrame, EmployeeFrame employeeFrame, TeamFrame teamFrame, MaterialFrame materialFrame, PlanFrame planFrame, ProjectFrame projectFrame, QueryFrame queryFrame) {
+    public MainFrame(PositionFrame positionFrame, EmployeeFrame employeeFrame, TeamFrame teamFrame, MaterialFrame materialFrame, PlanFrame planFrame, ProjectFrame projectFrame, QueryFrame queryFrame, DbTransfer dbTransfer) {
         this.positionFrame = positionFrame;
         this.employeeFrame = employeeFrame;
         this.teamFrame = teamFrame;
@@ -27,6 +29,7 @@ public class MainFrame extends Frame {
         this.planFrame = planFrame;
         this.projectFrame = projectFrame;
         this.queryFrame = queryFrame;
+        this.dbTransfer = dbTransfer;
     }
 
     public void init() {
@@ -67,6 +70,13 @@ public class MainFrame extends Frame {
         buttonQuery.setBounds(180, 280, 340, 25);
         buttonQuery.addActionListener(e -> queryFrame.init());
 
+        JButton buttonTransfer = new JButton("Сохранить в MongoDB");
+        buttonTransfer.setBounds(180, 320, 340, 25);
+        buttonTransfer.addActionListener(e -> {
+            dbTransfer.transfer();
+            JOptionPane.showConfirmDialog(frame, "Данные успешно скопированы в MongoDB", "Инфо", JOptionPane.OK_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE);
+        });
+
         frame.add(labelMain);
         frame.add(buttonEmployee);
         frame.add(buttonMaterial);
@@ -75,6 +85,7 @@ public class MainFrame extends Frame {
         frame.add(buttonProject);
         frame.add(buttonQuery);
         frame.add(buttonTeam);
+        frame.add(buttonTransfer);
 
         frame.setVisible(true);
     }
